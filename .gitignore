@@ -10,7 +10,6 @@ test-output/
 node_modules/
 npm/node_modules/
 *.tgz
-package-lock.json
 
 # IDEs and editors
 .vscode/
