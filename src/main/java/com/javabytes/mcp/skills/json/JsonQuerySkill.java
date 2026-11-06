@@ -1,0 +1,65 @@
+package com.javabytes.mcp.skills.json;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.javabytes.mcp.skills.Skill;
+import com.javabytes.mcp.utils.ErrorHelper;
+import com.javabytes.mcp.utils.JsonUtils;
+
+/** Query JSON data using dot-notation path */
+public class JsonQuerySkill implements Skill {
+
+    private final ObjectMapper MAPPER = new ObjectMapper();
+
+    @Override
+    public String getName() { return "json_query"; }
+
+    @Override
+    public JsonNode execute(JsonNode params) {
+        String jsonInput = params.has("json") ? params.get("json").asText() : "";
+        String query = params.has("query") ? params.get("query").asText() : "";
+        try {
+            JsonNode root = JsonUtils.MAPPER.readTree(jsonInput);
+            JsonNode result = root;
+            if (query != null && !query.isEmpty()) {
+                String[] parts = query.split("\\.");
+                for (String part : parts) {
+                    if (result == null || !result.isObject()) {
+                        return ErrorHelper.error("QUERY_ERROR", "Cannot navigate into non-object at: " + part);
+                    }
+                    result = result.get(part);
+                    if (result == null) {
+                        ObjectNode errorResult = JsonUtils.MAPPER.createObjectNode();
+                        errorResult.put("success", true);
+                        errorResult.put("found", false);
+                        errorResult.put("query", query);
+                        errorResult.put("message", "Path not found: " + part);
+                        return errorResult;
+                    }
+                }
+            }
+            ObjectNode response = JsonUtils.MAPPER.createObjectNode();
+            response.put("success", true);
+            response.put("query", query);
+            response.put("found", true);
+            response.set("result", result);
+            return response;
+        } catch (Exception e) {
+            return ErrorHelper.error("JSON_ERROR", "Error querying JSON: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public Skill.JsonSchema getInputSchema() {
+        Skill.JsonSchema schema = new Skill.JsonSchema();
+        schema.property("json", new Skill.StringSchema().description("JSON string to query"));
+        schema.property("query", new Skill.StringSchema().description("Dot-notation path query (e.g., 'users.0.name')"));
+        schema.required("json");
+        return schema;
+    }
+}
+
+
+
+
