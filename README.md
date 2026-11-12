@@ -97,7 +97,8 @@ Tools are grouped, and a group can be toggled without touching code:
 | `diagnostics` | on | evidence-based project diagnostics |
 | `ui`, `design`, `codegen`, `springboot` | **off** | template generators |
 
-A fresh server exposes **35 capability tools**; the **28 template generators** are opt-in.
+A fresh server exposes **41 capability tools**; the **30 template generators** are opt-in
+(`JAVABYTES_ENABLE=all` exposes all 71).
 
 Enable or disable by group or by individual tool name:
 
