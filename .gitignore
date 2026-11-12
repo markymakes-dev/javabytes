@@ -9,6 +9,7 @@ test-output/
 # Node.js/npm
 node_modules/
 npm/node_modules/
+npm/LICENSE
 *.tgz
 
 # IDEs and editors

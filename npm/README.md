@@ -70,9 +70,15 @@ npm test               # launcher unit tests
 
 ## Publishing
 
-1. Choose a license for the package (the repository does not declare one yet).
-2. `npm login`
-3. `npm publish --access public`
+1. `npm login`
+2. `npm publish --access public`
+
+`prepack` copies the shaded jar and the repository `LICENSE` into the package, so
+both ship in the tarball.
 
 The package name `javabytes-mcp` was unclaimed on npm at the time of writing;
 re-check with `npm view javabytes-mcp` before publishing.
+
+## License
+
+MIT — see [LICENSE](../LICENSE).

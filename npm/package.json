@@ -2,6 +2,13 @@
   "name": "javabytes-mcp",
   "version": "1.0.0",
   "description": "JavaBytes MCP server: filesystem, MySQL analysis, JavaFX, Spring Boot and JavaScript migration tools over stdio.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/markymakes-dev/javabytes.git",
+    "directory": "npm"
+  },
+  "homepage": "https://github.com/markymakes-dev/javabytes#readme",
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -17,6 +24,7 @@
     "bin",
     "lib",
     "jar/javabytes.jar",
+    "LICENSE",
     "README.md"
   ],
   "scripts": {

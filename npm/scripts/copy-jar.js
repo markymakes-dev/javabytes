@@ -21,3 +21,9 @@ fs.copyFileSync(source, destination);
 
 const size = (fs.statSync(destination).size / (1024 * 1024)).toFixed(1);
 console.log(`[javabytes] Bundled ${destination} (${size} MB)`);
+
+const licenseSource = path.join(root, "..", "LICENSE");
+if (fs.existsSync(licenseSource)) {
+  fs.copyFileSync(licenseSource, path.join(root, "LICENSE"));
+  console.log("[javabytes] Bundled LICENSE");
+}

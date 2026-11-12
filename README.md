@@ -187,12 +187,24 @@ into source.
 
 ## Tests
 
-`mvn test` runs 46 tests covering the sandbox (traversal, null bytes, sibling-prefix),
+`mvn test` runs 70 tests covering the sandbox (traversal, null bytes, sibling-prefix),
 directory creation results, glob and content search, CSS conversion, generated UI code, SQL
 rejection, dependency false positives, error shapes, tool metadata completeness and
 annotations, feature-flag precedence, and client-root narrowing/reset.
 
 MySQL and JavaFX integration tests require a real database. Canvas export was verified
-end-to-end over stdio (200x100 PNG, correct magic bytes). A 19-check stdio scenario also
-covers roots negotiation, sandbox narrowing, `roots/list_changed`, disabled-tool errors, and
-annotations in `tools/list`.
+end-to-end over stdio (200x100 PNG, correct magic bytes). A 26-check stdio scenario also
+covers roots negotiation, sandbox narrowing, `roots/list_changed`, disabled-tool errors,
+launcher resolution, and annotations in `tools/list`.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+You may use, modify, and redistribute JavaBytes commercially. In return, the only
+obligation is keeping the copyright notice and licence text with copies.
+
+The bundled `mysql-connector-j` is GPL-2.0 *with the Universal FOSS Exception*, which
+permits redistribution inside an OSI-approved (MIT) program. If this project ever ships a
+proprietary build, that dependency must be replaced (for example with
+`mariadb-java-client`, LGPL-2.1) or licensed commercially from Oracle.
