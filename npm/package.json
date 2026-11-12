@@ -1,5 +1,5 @@
 {
-  "name": "@javabytes/mcp",
+  "name": "javabytes-mcp",
   "version": "1.0.0",
   "description": "JavaBytes MCP server: filesystem, MySQL analysis, JavaFX, Spring Boot and JavaScript migration tools over stdio.",
   "keywords": [

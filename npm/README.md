@@ -1,4 +1,4 @@
-# @javabytes/mcp
+# javabytes-mcp
 
 JavaBytes is a general-purpose Java MCP server for filesystem work, MySQL
 analysis, JavaFX, Spring Boot and JavaScript-to-Java migration planning. It
@@ -13,7 +13,7 @@ Node.js and Java.
 ## Run
 
 ```bash
-npx -y @javabytes/mcp
+npx -y javabytes-mcp
 ```
 
 The process reads MCP messages on stdin and writes only protocol messages to
@@ -26,7 +26,7 @@ stdout. Logs go to stderr.
   "mcpServers": {
     "javabytes": {
       "command": "npx",
-      "args": ["-y", "@javabytes/mcp"],
+      "args": ["-y", "javabytes-mcp"],
       "env": {
         "JAVABYTES_DB_URL": "jdbc:mysql://localhost:3306/appdb",
         "JAVABYTES_DB_USER": "app",
@@ -74,5 +74,5 @@ npm test               # launcher unit tests
 2. `npm login`
 3. `npm publish --access public`
 
-The package name `@javabytes/mcp` was unclaimed on npm at the time of writing;
-re-check with `npm view @javabytes/mcp` before publishing.
+The package name `javabytes-mcp` was unclaimed on npm at the time of writing;
+re-check with `npm view javabytes-mcp` before publishing.

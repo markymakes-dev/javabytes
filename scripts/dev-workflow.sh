@@ -50,7 +50,7 @@ function publish_npm() {
     }
     
     # Check package availability
-    local package_name="@javabytes/mcp"
+    local package_name="javabytes-mcp"
     npm view "$package_name" > /dev/null 2>&1 || {
         echo "⚠️  Package $package_name not found on npm (this is OK for first publish)"
     }
@@ -66,8 +66,8 @@ function verify_team_workflow() {
     # Test npm package installation
     local temp_dir="$(mktemp -d)"
     cd "$temp_dir"
-    npm install -y @javabytes/mcp > /dev/null 2>&1
-    if [[ ! -f "node_modules/@javabytes/mcp/bin/javabytes.js" ]]; then
+    npm install -y javabytes-mcp > /dev/null 2>&1
+    if [[ ! -f "node_modules/javabytes-mcp/bin/javabytes.js" ]]; then
         echo "❌ npm package installation failed"
         rm -rf "$temp_dir"
         exit 1
@@ -89,7 +89,7 @@ Team members can now use JavaBytes with ONE command:
 {
   "mcpServers": {
     "javabytes": {
-      "command": ["npx", "-y", "@javabytes/mcp"],
+      "command": ["npx", "-y", "javabytes-mcp"],
       "env": {
         "JAVABYTES_DB_URL": "jdbc:mysql://localhost:3306/appdb",
         "JAVABYTES_DB_USER": "app",
@@ -104,7 +104,7 @@ Team members can now use JavaBytes with ONE command:
   "mcpServers": {
     "javabytes": {
       "command": "npx",
-      "args": ["-y", "@javabytes/mcp"],
+      "args": ["-y", "javabytes-mcp"],
       "env": {
         "JAVABYTES_DB_URL": "jdbc:mysql://localhost:3306/appdb",
         "JAVABYTES_DB_USER": "app",
@@ -115,7 +115,7 @@ Team members can now use JavaBytes with ONE command:
 }
 
 Team members can now just run:
-  npx -y @javabytes/mcp
+  npx -y javabytes-mcp
 
 =================================================================
 EOF

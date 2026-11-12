@@ -18,10 +18,10 @@ directly with Jackson.
 
 ## Install with npx
 
-The `@javabytes/mcp` package bundles the shaded jar, so a client only needs Node.js and Java:
+The `javabytes-mcp` package bundles the shaded jar, so a client only needs Node.js and Java:
 
 ```bash
-npx -y @javabytes/mcp
+npx -y javabytes-mcp
 ```
 
 It resolves `java` from `JAVABYTES_JAVA`, then `JAVA_HOME`, then `PATH`, and the jar from
@@ -32,7 +32,7 @@ It resolves `java` from `JAVABYTES_JAVA`, then `JAVA_HOME`, then `PATH`, and the
   "mcpServers": {
     "javabytes": {
       "command": "npx",
-      "args": ["-y", "@javabytes/mcp"],
+      "args": ["-y", "javabytes-mcp"],
       "env": {
         "JAVABYTES_DB_URL": "jdbc:mysql://localhost:3306/appdb",
         "JAVABYTES_DB_USER": "app",
