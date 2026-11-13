@@ -223,10 +223,12 @@ launcher resolution, and annotations in `tools/list`.
 
 ## Agent skills
 
-`skills/` holds two agent skills that make the tool catalog usable without
-reading it: `javabytes-setup` (install, configure, troubleshoot) and
-`javabytes-tool-routing` (which tool to call, in what order, and what counts as
-done). Install them into an agent with:
+`skills/` holds three agent skills that make the tool catalog usable without
+reading it: `javabytes-setup` (install, configure, troubleshoot),
+`javabytes-tool-routing` (which tool to call, in what order, and what counts
+as done) and `javabytes-convert` (the JavaScript-to-Java pipeline: clone, scope,
+analyze, translate, report — with an honest manual-work inventory). Install
+them into an agent with:
 
 ```bash
 npx skills@latest add markymakes-dev/javabytes
