@@ -94,23 +94,27 @@ function Show-Team-Instructions {
 TEAM INSTALLATION INSTRUCTIONS
 =================================================================
 
-Team members can now use JavaBytes with ONE command:
+Team members need Node 18+ and Java 21+; nothing else.
 
-1. OpenCode Configuration (copy to ~/.config/opencode/opencode.json):
+1. OpenCode - global config (~/.config/opencode/opencode.json).
+   Note the shape: "mcp" (not "mcpServers"), a "command" array,
+   and "environment" (not "env"). OpenCode ignores the other shape.
 {
-  "mcpServers": {
+  "mcp": {
     "javabytes": {
+      "type": "local",
       "command": ["npx", "-y", "javabytes-mcp"],
-      "env": {
+      "environment": {
         "JAVABYTES_DB_URL": "jdbc:mysql://localhost:3306/appdb",
         "JAVABYTES_DB_USER": "app",
         "JAVABYTES_DB_PASSWORD": "change-me"
-      }
+      },
+      "enabled": true
     }
   }
 }
 
-2. For Claude Desktop (claude_desktop_config.json):
+2. Claude Desktop (claude_desktop_config.json) - different shape:
 {
   "mcpServers": {
     "javabytes": {
@@ -125,7 +129,7 @@ Team members can now use JavaBytes with ONE command:
   }
 }
 
-Team members can now just run:
+Smoke test without a client:
   npx -y javabytes-mcp
 
 =================================================================

@@ -1,5 +1,7 @@
 # JavaBytes
 
+[![CI](https://github.com/markymakes-dev/javabytes/actions/workflows/ci.yml/badge.svg)](https://github.com/markymakes-dev/javabytes/actions/workflows/ci.yml)
+
 A general-purpose Java MCP (Model Context Protocol) server that speaks JSON-RPC 2.0 over stdio.
 
 It exposes Java-oriented tools for file access, MySQL, JavaFX canvas rendering/export, project
@@ -25,7 +27,9 @@ npx -y javabytes-mcp
 ```
 
 It resolves `java` from `JAVABYTES_JAVA`, then `JAVA_HOME`, then `PATH`, and the jar from
-`JAVABYTES_JAR` or the bundled copy. Client config:
+`JAVABYTES_JAR` or the bundled copy.
+
+Client config — Claude Desktop and most clients:
 
 ```json
 {
@@ -38,6 +42,26 @@ It resolves `java` from `JAVABYTES_JAVA`, then `JAVA_HOME`, then `PATH`, and the
         "JAVABYTES_DB_USER": "app",
         "JAVABYTES_DB_PASSWORD": "change-me"
       }
+    }
+  }
+}
+```
+
+OpenCode (`~/.config/opencode/opencode.json`) uses a different shape — `mcp`, a `command` array,
+and `environment` rather than `env`:
+
+```json
+{
+  "mcp": {
+    "javabytes": {
+      "type": "local",
+      "command": ["npx", "-y", "javabytes-mcp"],
+      "environment": {
+        "JAVABYTES_DB_URL": "jdbc:mysql://localhost:3306/appdb",
+        "JAVABYTES_DB_USER": "app",
+        "JAVABYTES_DB_PASSWORD": "change-me"
+      },
+      "enabled": true
     }
   }
 }
