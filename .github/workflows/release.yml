@@ -67,8 +67,10 @@ jobs:
           JAR=target/javabytes.jar
           SHA=$(sha256sum "$JAR" | cut -d' ' -f1)
           SIZE=$(stat -c%s "$JAR")
-          cat > NOTES.md <<EOF
-          JavaBytes ${TAG}
+          # Quoted heredoc: backticks in markdown fences would otherwise be
+          # command substitution, and this file is uploaded verbatim.
+          cat > NOTES.md <<'EOF'
+          JavaBytes __TAG__
 
           ## Install
 
@@ -77,14 +79,15 @@ jobs:
           ```
 
           Or download the jar below and run `java -jar javabytes.jar` (Java 21+).
-          Client configuration: https://github.com/${GITHUB_REPOSITORY}#installation
+          Client configuration: https://github.com/__REPO__#installation
 
           ## Asset
 
           | File | Size | SHA-256 |
           |---|---|---|
-          | javabytes.jar | ${SIZE} bytes | ${SHA} |
+          | javabytes.jar | __SIZE__ bytes | __SHA__ |
           EOF
+          sed -i "s|__TAG__|${TAG}|g; s|__REPO__|${GITHUB_REPOSITORY}|g; s|__SIZE__|${SIZE}|g; s|__SHA__|${SHA}|g" NOTES.md
 
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG exists; replacing the jar asset."
