@@ -6,6 +6,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.database.MyDatabaseClient;
 import com.javabytes.mcp.database.SchemaCatalog;
 import com.javabytes.mcp.database.FunctionalDependencyAnalyzer;
+import com.javabytes.mcp.schema.Column;
+import com.javabytes.mcp.schema.Index;
+import com.javabytes.mcp.schema.InformationSchemaReader;
+import com.javabytes.mcp.schema.Relation;
+import com.javabytes.mcp.schema.SchemaModel;
+import com.javabytes.mcp.schema.Table;
 import com.javabytes.mcp.tools.Tool;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
@@ -26,7 +32,8 @@ import java.util.regex.Pattern;
  *
  * <p>This is deliberately evidence-based: it inspects primary keys, foreign
  * keys, indexes, column types and (optionally) a bounded sample of list-like
- * columns. It does not claim to prove functional dependencies it cannot see.</p>
+ * columns. It does not claim to prove functional dependencies it cannot see.
+ * The catalog snapshot comes from the shared {@link InformationSchemaReader}.</p>
  */
 public class AnalyzeSchemaNormalizationTool implements Tool {
 
@@ -44,16 +51,6 @@ public class AnalyzeSchemaNormalizationTool implements Tool {
 
     private static final Set<String> TEXT_TYPES = Set.of(
             "char", "varchar", "tinytext", "text", "mediumtext", "longtext", "json", "set");
-
-    private record Column(String name, String dataType, boolean primaryKey) {
-    }
-
-    private record ForeignKey(String table, String column, String constraint,
-                              String referencedTable, String referencedColumn) {
-    }
-
-    private record Index(String name, boolean unique, List<String> columns) {
-    }
 
     private record Finding(String normalForm, String severity, String table,
                            List<String> columns, String evidence, String recommendation) {
@@ -80,20 +77,21 @@ public class AnalyzeSchemaNormalizationTool implements Tool {
 
         try {
             MyDatabaseClient db = new MyDatabaseClient();
-            String database = SchemaCatalog.currentDatabase(db);
+            SchemaModel schema = new InformationSchemaReader().read();
+            String database = schema.database();
             if (database == null) {
                 return ErrorHelper.error("NO_DATABASE",
                         "No schema selected. Set JAVABYTES_DB_URL to a database or qualify the connection.");
             }
 
-            Map<String, List<Column>> allTables = loadColumns(db);
+            Map<String, Table> allTables = tablesByName(schema.tables());
             boolean truncated = allTables.size() > MAX_TABLES;
-            Map<String, List<Column>> tables = truncated
+            Map<String, Table> tables = truncated
                     ? firstTables(allTables, MAX_TABLES)
                     : allTables;
 
-            List<ForeignKey> foreignKeys = loadForeignKeys(db);
-            Map<String, List<Index>> indexes = loadIndexes(db);
+            List<Relation> foreignKeys = schema.relations();
+            Map<String, List<Index>> indexes = indexesByTable(tables);
 
             List<Finding> findings = new ArrayList<>();
             checkPrimaryKeys(tables, findings);
@@ -138,27 +136,18 @@ public class AnalyzeSchemaNormalizationTool implements Tool {
         }
     }
 
-    private static Map<String, List<Column>> loadColumns(MyDatabaseClient db) {
-        JsonNode result = db.query(
-                "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_KEY "
-                        + "FROM information_schema.COLUMNS "
-                        + "WHERE TABLE_SCHEMA = DATABASE() "
-                        + "ORDER BY TABLE_NAME, ORDINAL_POSITION");
-        Map<String, List<Column>> tables = new TreeMap<>();
-        for (JsonNode row : SchemaCatalog.rows(result)) {
-            String table = SchemaCatalog.text(row, "TABLE_NAME");
-            tables.computeIfAbsent(table, key -> new ArrayList<>())
-                    .add(new Column(
-                            SchemaCatalog.text(row, "COLUMN_NAME"),
-                            SchemaCatalog.text(row, "DATA_TYPE").toLowerCase(Locale.ROOT),
-                            "PRI".equalsIgnoreCase(SchemaCatalog.text(row, "COLUMN_KEY"))));
+    /** Tables by name in natural order, matching the previous TreeMap-backed loading. */
+    private static Map<String, Table> tablesByName(List<Table> schemaTables) {
+        Map<String, Table> byName = new TreeMap<>();
+        for (Table table : schemaTables) {
+            byName.put(table.name(), table);
         }
-        return tables;
+        return byName;
     }
 
-    private static Map<String, List<Column>> firstTables(Map<String, List<Column>> tables, int limit) {
-        Map<String, List<Column>> subset = new LinkedHashMap<>();
-        for (Map.Entry<String, List<Column>> entry : tables.entrySet()) {
+    private static Map<String, Table> firstTables(Map<String, Table> tables, int limit) {
+        Map<String, Table> subset = new LinkedHashMap<>();
+        for (Map.Entry<String, Table> entry : tables.entrySet()) {
             if (subset.size() >= limit) {
                 break;
             }
@@ -167,73 +156,35 @@ public class AnalyzeSchemaNormalizationTool implements Tool {
         return subset;
     }
 
-    private static List<ForeignKey> loadForeignKeys(MyDatabaseClient db) {
-        JsonNode result = db.query(
-                "SELECT TABLE_NAME, COLUMN_NAME, CONSTRAINT_NAME, "
-                        + "REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME "
-                        + "FROM information_schema.KEY_COLUMN_USAGE "
-                        + "WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME IS NOT NULL "
-                        + "ORDER BY TABLE_NAME, CONSTRAINT_NAME, ORDINAL_POSITION");
-        List<ForeignKey> keys = new ArrayList<>();
-        for (JsonNode row : SchemaCatalog.rows(result)) {
-            keys.add(new ForeignKey(
-                    SchemaCatalog.text(row, "TABLE_NAME"),
-                    SchemaCatalog.text(row, "COLUMN_NAME"),
-                    SchemaCatalog.text(row, "CONSTRAINT_NAME"),
-                    SchemaCatalog.text(row, "REFERENCED_TABLE_NAME"),
-                    SchemaCatalog.text(row, "REFERENCED_COLUMN_NAME")));
-        }
-        return keys;
-    }
-
-    private static Map<String, List<Index>> loadIndexes(MyDatabaseClient db) {
-        JsonNode result = db.query(
-                "SELECT TABLE_NAME, INDEX_NAME, NON_UNIQUE, COLUMN_NAME "
-                        + "FROM information_schema.STATISTICS "
-                        + "WHERE TABLE_SCHEMA = DATABASE() "
-                        + "ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX");
+    private static Map<String, List<Index>> indexesByTable(Map<String, Table> tables) {
         Map<String, List<Index>> indexes = new TreeMap<>();
-        Map<String, List<String>> columnsByIndex = new LinkedHashMap<>();
-        Map<String, Boolean> uniqueByIndex = new LinkedHashMap<>();
-        for (JsonNode row : SchemaCatalog.rows(result)) {
-            String table = SchemaCatalog.text(row, "TABLE_NAME");
-            String index = SchemaCatalog.text(row, "INDEX_NAME");
-            String key = table + "\u0000" + index;
-            columnsByIndex.computeIfAbsent(key, k -> new ArrayList<>())
-                    .add(SchemaCatalog.text(row, "COLUMN_NAME"));
-            uniqueByIndex.put(key, !SchemaCatalog.bool(row, "NON_UNIQUE"));
-        }
-        for (Map.Entry<String, List<String>> entry : columnsByIndex.entrySet()) {
-            String table = entry.getKey().split("\u0000", 2)[0];
-            String name = entry.getKey().split("\u0000", 2)[1];
-            indexes.computeIfAbsent(table, k -> new ArrayList<>())
-                    .add(new Index(name, uniqueByIndex.getOrDefault(entry.getKey(), false),
-                            List.copyOf(entry.getValue())));
+        for (Map.Entry<String, Table> entry : tables.entrySet()) {
+            indexes.put(entry.getKey(), entry.getValue().indexes());
         }
         return indexes;
     }
 
-    private static void checkPrimaryKeys(Map<String, List<Column>> tables, List<Finding> findings) {
-        for (Map.Entry<String, List<Column>> entry : tables.entrySet()) {
-            boolean hasPrimaryKey = entry.getValue().stream().anyMatch(Column::primaryKey);
-            if (!hasPrimaryKey) {
-                findings.add(new Finding("2NF", "high", entry.getKey(), List.of(),
-                        "Table has no primary key.",
-                        "Add a primary key that uniquely identifies each row; without one, "
-                                + "non-key attributes cannot be functionally dependent on a key."));
+    private static void checkPrimaryKeys(Map<String, Table> tables, List<Finding> findings) {
+        for (Map.Entry<String, Table> entry : tables.entrySet()) {
+            if (!entry.getValue().primaryKeys().isEmpty()) {
+                continue;
             }
+            findings.add(new Finding("2NF", "high", entry.getKey(), List.of(),
+                    "Table has no primary key.",
+                    "Add a primary key that uniquely identifies each row; without one, "
+                            + "non-key attributes cannot be functionally dependent on a key."));
         }
     }
 
-    private static void checkRepeatingGroups(Map<String, List<Column>> tables, List<Finding> findings) {
-        for (Map.Entry<String, List<Column>> entry : tables.entrySet()) {
+    private static void checkRepeatingGroups(Map<String, Table> tables, List<Finding> findings) {
+        for (Map.Entry<String, Table> entry : tables.entrySet()) {
             String table = entry.getKey();
             Map<String, List<String>> numbered = new TreeMap<>();
-            for (Column column : entry.getValue()) {
-                if (column.primaryKey()) {
+            for (Column column : entry.getValue().columns()) {
+                if (entry.getValue().primaryKeys().contains(column.name())) {
                     continue;
                 }
-                if (column.dataType().equals("set")) {
+                if (dataType(column).equals("set")) {
                     findings.add(new Finding("1NF", "medium", table, List.of(column.name()),
                             "Column uses MySQL SET, which stores multiple values in one column.",
                             "Replace SET with a child table or a JSON column if the list is opaque."));
@@ -255,34 +206,29 @@ public class AnalyzeSchemaNormalizationTool implements Tool {
         }
     }
 
-    private static void checkJunctionTables(Map<String, List<Column>> tables,
-                                            List<ForeignKey> foreignKeys,
+    private static void checkJunctionTables(Map<String, Table> tables,
+                                            List<Relation> foreignKeys,
                                             Map<String, List<Index>> indexes,
                                             List<Finding> findings) {
-        Map<String, List<ForeignKey>> byTable = new LinkedHashMap<>();
-        for (ForeignKey foreignKey : foreignKeys) {
-            byTable.computeIfAbsent(foreignKey.table(), k -> new ArrayList<>()).add(foreignKey);
+        Map<String, List<Relation>> byTable = new LinkedHashMap<>();
+        for (Relation foreignKey : foreignKeys) {
+            byTable.computeIfAbsent(foreignKey.sourceTable(), k -> new ArrayList<>()).add(foreignKey);
         }
-        for (Map.Entry<String, List<Column>> entry : tables.entrySet()) {
-            List<ForeignKey> keys = byTable.getOrDefault(entry.getKey(), List.of());
+        for (Map.Entry<String, Table> entry : tables.entrySet()) {
+            List<Relation> keys = byTable.getOrDefault(entry.getKey(), List.of());
             if (keys.size() != 2) {
                 continue;
             }
             Set<String> fkColumns = new LinkedHashSet<>();
-            keys.forEach(key -> fkColumns.add(key.column()));
+            keys.forEach(key -> fkColumns.add(key.sourceColumn()));
 
-            boolean everyColumnIsForeignKey = entry.getValue().stream()
+            boolean everyColumnIsForeignKey = entry.getValue().columns().stream()
                     .allMatch(column -> fkColumns.contains(column.name()));
             if (!everyColumnIsForeignKey) {
                 continue;
             }
 
-            Set<String> primaryKey = new LinkedHashSet<>();
-            for (Column column : entry.getValue()) {
-                if (column.primaryKey()) {
-                    primaryKey.add(column.name());
-                }
-            }
+            Set<String> primaryKey = new LinkedHashSet<>(entry.getValue().primaryKeys());
             boolean uniquePair = indexes.getOrDefault(entry.getKey(), List.of()).stream()
                     .anyMatch(index -> index.unique()
                             && new LinkedHashSet<>(index.columns()).equals(fkColumns));
@@ -297,54 +243,55 @@ public class AnalyzeSchemaNormalizationTool implements Tool {
         }
     }
 
-    private static void checkForeignKeyIndexes(Map<String, List<Column>> tables,
-                                               List<ForeignKey> foreignKeys,
+    private static void checkForeignKeyIndexes(Map<String, Table> tables,
+                                               List<Relation> foreignKeys,
                                                Map<String, List<Index>> indexes,
                                                List<Finding> findings) {
         Set<String> reported = new LinkedHashSet<>();
-        for (ForeignKey foreignKey : foreignKeys) {
-            if (!tables.containsKey(foreignKey.table())) {
+        for (Relation foreignKey : foreignKeys) {
+            if (!tables.containsKey(foreignKey.sourceTable())) {
                 continue;
             }
-            boolean covered = indexes.getOrDefault(foreignKey.table(), List.of()).stream()
+            boolean covered = indexes.getOrDefault(foreignKey.sourceTable(), List.of()).stream()
                     .anyMatch(index -> !index.columns().isEmpty()
-                            && index.columns().get(0).equals(foreignKey.column()));
-            if (!covered && reported.add(foreignKey.table() + "." + foreignKey.column())) {
-                findings.add(new Finding("performance", "low", foreignKey.table(),
-                        List.of(foreignKey.column()),
+                            && index.columns().get(0).equals(foreignKey.sourceColumn()));
+            if (!covered && reported.add(foreignKey.sourceTable() + "." + foreignKey.sourceColumn())) {
+                findings.add(new Finding("performance", "low", foreignKey.sourceTable(),
+                        List.of(foreignKey.sourceColumn()),
                         "Foreign key column has no index with this column first.",
-                        "Add INDEX (" + SchemaCatalog.quote(foreignKey.column()) + ") "
+                        "Add INDEX (" + SchemaCatalog.quote(foreignKey.sourceColumn()) + ") "
                                 + "if this relationship is queried or the parent row is deleted."));
             }
         }
     }
 
-    private static void checkDuplicatedAttributes(Map<String, List<Column>> tables,
-                                                  List<ForeignKey> foreignKeys,
+    private static void checkDuplicatedAttributes(Map<String, Table> tables,
+                                                  List<Relation> foreignKeys,
                                                   List<Finding> findings) {
         Set<String> reported = new LinkedHashSet<>();
-        for (ForeignKey foreignKey : foreignKeys) {
-            List<Column> local = tables.get(foreignKey.table());
-            List<Column> referenced = tables.get(foreignKey.referencedTable());
+        for (Relation foreignKey : foreignKeys) {
+            Table local = tables.get(foreignKey.sourceTable());
+            Table referenced = tables.get(foreignKey.targetTable());
             if (local == null || referenced == null) {
                 continue;
             }
             Set<String> referencedNames = new LinkedHashSet<>();
-            referenced.forEach(column -> referencedNames.add(column.name().toLowerCase(Locale.ROOT)));
+            referenced.columns().forEach(column -> referencedNames.add(column.name().toLowerCase(Locale.ROOT)));
 
-            for (Column column : local) {
+            for (Column column : local.columns()) {
                 String name = column.name().toLowerCase(Locale.ROOT);
-                if (column.primaryKey() || name.equals(foreignKey.column().toLowerCase(Locale.ROOT))) {
+                if (local.primaryKeys().contains(column.name())
+                        || name.equals(foreignKey.sourceColumn().toLowerCase(Locale.ROOT))) {
                     continue;
                 }
                 if (AUDIT_COLUMNS.contains(name) || !referencedNames.contains(name)) {
                     continue;
                 }
-                String key = foreignKey.table() + "." + name;
+                String key = foreignKey.sourceTable() + "." + name;
                 if (reported.add(key)) {
-                    findings.add(new Finding("3NF", "low", foreignKey.table(), List.of(column.name()),
+                    findings.add(new Finding("3NF", "low", foreignKey.sourceTable(), List.of(column.name()),
                             "Column also exists in referenced table '"
-                                    + foreignKey.referencedTable() + "'.",
+                                    + foreignKey.targetTable() + "'.",
                             "If this column mirrors the referenced row, remove it and join instead; "
                                     + "keep it only if it is an intentional historical snapshot."));
                 }
@@ -353,16 +300,16 @@ public class AnalyzeSchemaNormalizationTool implements Tool {
     }
 
     private static void checkDelimitedValues(MyDatabaseClient db,
-                                             Map<String, List<Column>> tables,
+                                             Map<String, Table> tables,
                                              int sampleRows,
                                              List<Finding> findings) {
         int sampledColumns = 0;
-        for (Map.Entry<String, List<Column>> entry : tables.entrySet()) {
-            for (Column column : entry.getValue()) {
+        for (Map.Entry<String, Table> entry : tables.entrySet()) {
+            for (Column column : entry.getValue().columns()) {
                 if (sampledColumns >= MAX_SAMPLE_COLUMNS) {
                     return;
                 }
-                if (!TEXT_TYPES.contains(column.dataType())
+                if (!TEXT_TYPES.contains(dataType(column))
                         || !LIST_LIKE.matcher(column.name()).matches()) {
                     continue;
                 }
@@ -399,30 +346,36 @@ public class AnalyzeSchemaNormalizationTool implements Tool {
         }
     }
 
-    private static Map<String, Set<String>> primaryKeyColumns(Map<String, List<Column>> tables) {
+    private static Map<String, Set<String>> primaryKeyColumns(Map<String, Table> tables) {
         Map<String, Set<String>> keys = new LinkedHashMap<>();
-        for (Map.Entry<String, List<Column>> entry : tables.entrySet()) {
-            Set<String> columns = new LinkedHashSet<>();
-            for (Column column : entry.getValue()) {
-                if (column.primaryKey()) {
-                    columns.add(column.name());
-                }
-            }
-            keys.put(entry.getKey(), columns);
+        for (Map.Entry<String, Table> entry : tables.entrySet()) {
+            keys.put(entry.getKey(), new LinkedHashSet<>(entry.getValue().primaryKeys()));
         }
         return keys;
     }
 
-    private static Map<String, Set<String>> columnNames(Map<String, List<Column>> tables) {
+    private static Map<String, Set<String>> columnNames(Map<String, Table> tables) {
         Map<String, Set<String>> columns = new LinkedHashMap<>();
-        for (Map.Entry<String, List<Column>> entry : tables.entrySet()) {
+        for (Map.Entry<String, Table> entry : tables.entrySet()) {
             Set<String> names = new LinkedHashSet<>();
-            for (Column column : entry.getValue()) {
+            for (Column column : entry.getValue().columns()) {
                 names.add(column.name());
             }
             columns.put(entry.getKey(), names);
         }
         return columns;
+    }
+
+    /**
+     * Base type name of a raw MySQL column type, e.g. {@code varchar(191)} maps
+     * to {@code varchar}. This is the information_schema DATA_TYPE equivalent
+     * used for type matching; the raw type itself is never rewritten.
+     */
+    private static String dataType(Column column) {
+        String raw = column.rawType();
+        int parentheses = raw == null ? -1 : raw.indexOf('(');
+        String base = parentheses >= 0 ? raw.substring(0, parentheses) : raw;
+        return base == null ? "" : base.trim().toLowerCase(Locale.ROOT);
     }
 
     private static ObjectNode functionalDependencyReport(
