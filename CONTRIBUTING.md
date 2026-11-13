@@ -47,7 +47,7 @@ about.
 `.github/workflows/ci.yml` runs on every push and pull request:
 
 - `mvn -B package` on **JDK 21** — unit tests plus the shaded jar, so shade/relocation breakage fails the build
-- `npm test` on **Node 20** — launcher unit tests only
+- `npm test` on **Node 18 and Node 22** — launcher unit tests only; 18 is the declared floor in `engines`, 22 is current
 
 CI deliberately does **not** run the live MySQL tests or the stdio end-to-end harness: they need a
 database and credentials. Run them locally before touching the database tools.
@@ -108,6 +108,34 @@ are unsure, say less.
   at hardest
 - If the change is user-visible, update `README.md`; if it is a decision someone might revisit,
   consider `docs/adr/`
+
+## Releasing
+
+Releases are cut from `main` by pushing a version tag:
+
+1. Bump `<version>` in `pom.xml` and `version` in `npm/package.json` to the same value.
+2. Commit, push, and wait for CI to go green.
+3. Tag and push:
+
+   ```bash
+   git tag v1.1.0
+   git push origin v1.1.0
+   ```
+
+`.github/workflows/release.yml` then builds the shaded jar on JDK 21, **fails if the tag does not
+match the pom version**, checks that the jar declares a `Main-Class`, and creates the GitHub Release
+with `javabytes.jar` attached alongside its SHA-256.
+
+Publishing to npm stays manual: npm's passkey flow needs a real terminal and the maintainer's
+approval.
+
+```bash
+cd npm
+npm publish --access public
+```
+
+The workflow can also be run by hand (`workflow_dispatch`) against an existing tag — the repair path
+if the release job fails after the tag is already pushed.
 
 ## Working with agents
 
