@@ -1,0 +1,25 @@
+# Dependabot: automated dependency-update PRs.
+# Weekly cadence; minor+patch grouped into one PR per ecosystem so a solo
+# maintainer reviews one batch, not a stream. Security updates always
+# arrive individually and immediately, regardless of grouping.
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "npm"
+    directory: "/npm"
+    schedule:
+      interval: "weekly"
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
