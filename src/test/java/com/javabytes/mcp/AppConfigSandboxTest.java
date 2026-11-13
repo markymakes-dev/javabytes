@@ -32,8 +32,20 @@ class AppConfigSandboxTest {
 
     @Test
     void rejectsSystemDirectories() {
-        assertFalse(AppConfig.isPathAllowed(Path.of("C:\\Windows\\win.ini")));
-        assertFalse(AppConfig.isPathAllowed(Path.of("/etc/passwd")));
+        assertFalse(AppConfig.isPathAllowed(systemFileOutsideSandbox()));
+    }
+
+    /**
+     * An absolute system path that exists on this platform and sits outside the
+     * sandbox. Windows-style paths are relative on Unix (and vice versa), so the
+     * test has to pick one per platform rather than assert both.
+     */
+    private static Path systemFileOutsideSandbox() {
+        return isWindows() ? Path.of("C:\\Windows\\win.ini") : Path.of("/etc/passwd");
+    }
+
+    private static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
     }
 
     @Test

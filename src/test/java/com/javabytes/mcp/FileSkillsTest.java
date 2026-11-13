@@ -82,9 +82,20 @@ class FileSkillsTest {
 
     @Test
     void getFileInfoRejectsPathsOutsideSandbox() {
-        JsonNode result = new GetFileInfoSkill().execute(params("path", "C:\\Windows\\win.ini"));
+        JsonNode result = new GetFileInfoSkill().execute(params("path", systemFileOutsideSandbox().toString()));
         assertFalse(result.get("success").asBoolean());
         assertEquals("PATH_NOT_ALLOWED", result.get("error").asText());
+    }
+
+    /**
+     * An absolute system file outside the sandbox. A Windows path is merely
+     * relative on Unix, which would land inside the working directory and be
+     * allowed, so the platform picks its own.
+     */
+    private static Path systemFileOutsideSandbox() {
+        return System.getProperty("os.name").toLowerCase().contains("win")
+                ? Path.of("C:\\Windows\\win.ini")
+                : Path.of("/etc/passwd");
     }
 
     private com.fasterxml.jackson.databind.node.ObjectNode params(String key, String value) {
