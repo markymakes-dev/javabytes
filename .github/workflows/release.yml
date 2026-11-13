@@ -1,9 +1,9 @@
 name: Release
 
 # Triggered by pushing a version tag (v1.2.3). Builds the shaded jar and
-# attaches it to a GitHub Release, replacing the manual `gh release create`
-# step documented in the wiki. npm publishing stays manual on purpose: it
-# needs the maintainer's passkey in a real terminal.
+# attaches it to a GitHub Release, then publishes the npm package via OIDC
+# trusted publishing (no tokens, no OTP). The npmjs.com trusted-publisher
+# config must keep pointing at this workflow file.
 on:
   push:
     tags: ["v*"]
@@ -58,6 +58,13 @@ jobs:
           test -f target/javabytes.jar
           unzip -p target/javabytes.jar META-INF/MANIFEST.MF | grep -i "^Main-Class:"
 
+      - name: Upload jar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: javabytes-jar
+          path: target/javabytes.jar
+          if-no-files-found: error
+
       - name: Create or update release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -104,13 +111,35 @@ jobs:
           {
             echo "### Release ${TAG} published"
             echo ""
-            echo "Remaining manual step: publish the npm package."
-            echo ""
-            echo '```'
-            echo "cd npm"
-            echo "npm version <version>                        # keep equal to the pom version"
-            echo "npm publish --access public                  # needs a real terminal + passkey"
-            echo '```'
+            echo "The npm package is published by the npm-publish job via OIDC trusted publishing."
           } >> "$GITHUB_STEP_SUMMARY"
         env:
           TAG: ${{ inputs.tag || github.ref_name }}
+
+  npm-publish:
+    name: Publish npm package (OIDC trusted publishing)
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Download built jar
+        uses: actions/download-artifact@v4
+        with:
+          name: javabytes-jar
+          path: target
+
+      # Trusted publishing needs npm >= 11.5.1; Node 24 ships a current npm 11.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org/
+
+      - name: Publish
+        working-directory: npm
+        run: npm publish --access public --provenance
