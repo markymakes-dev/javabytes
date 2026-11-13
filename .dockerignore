@@ -1,0 +1,10 @@
+# Keep the Docker build context to sources only.
+.git
+.github
+target
+npm
+docs
+skills
+scripts
+*.md
+!README.md

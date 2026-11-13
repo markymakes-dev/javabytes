@@ -1,0 +1,48 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.markymakes-dev/javabytes",
+  "title": "JavaBytes",
+  "description": "71 Java-focused tools for files, MySQL, JavaFX, Spring Boot and JS-to-Java migration, over stdio.",
+  "repository": {
+    "url": "https://github.com/markymakes-dev/javabytes",
+    "source": "github"
+  },
+  "version": "1.0.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "javabytes-mcp",
+      "version": "1.0.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "JAVABYTES_ALLOWED_DIRS",
+          "description": "Filesystem sandbox roots (defaults to working dir + JVM temp dir)",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "JAVABYTES_DB_URL",
+          "description": "JDBC URL for the MySQL tools",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "JAVABYTES_DB_USER",
+          "description": "MySQL user",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "JAVABYTES_DB_PASSWORD",
+          "description": "MySQL password",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
