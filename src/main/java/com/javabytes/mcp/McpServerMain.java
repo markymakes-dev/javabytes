@@ -5,18 +5,18 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.config.AppConfig;
 import com.javabytes.mcp.config.FeatureConfiguration;
-import com.javabytes.mcp.skills.Skill;
-import com.javabytes.mcp.skills.database.*;
-import com.javabytes.mcp.skills.design.*;
-import com.javabytes.mcp.skills.diagnostics.*;
-import com.javabytes.mcp.skills.file.*;
-import com.javabytes.mcp.skills.javafx.*;
-import com.javabytes.mcp.skills.json.JsonQuerySkill;
-import com.javabytes.mcp.skills.code.*;
-import com.javabytes.mcp.skills.system.*;
-import com.javabytes.mcp.skills.springboot.*;
-import com.javabytes.mcp.skills.ui.*;
-import com.javabytes.mcp.skills.web.*;
+import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.database.*;
+import com.javabytes.mcp.tools.design.*;
+import com.javabytes.mcp.tools.diagnostics.*;
+import com.javabytes.mcp.tools.file.*;
+import com.javabytes.mcp.tools.javafx.*;
+import com.javabytes.mcp.tools.json.JsonQueryTool;
+import com.javabytes.mcp.tools.code.*;
+import com.javabytes.mcp.tools.system.*;
+import com.javabytes.mcp.tools.springboot.*;
+import com.javabytes.mcp.tools.ui.*;
+import com.javabytes.mcp.tools.web.*;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.ProtocolLogger;
 import com.javabytes.mcp.utils.Roots;
@@ -82,101 +82,101 @@ public class McpServerMain {
     public static void main(String[] args) {
         McpServerRegistry registry = new McpServerRegistry();
 
-        // File skills (10)
-        registerSkill(registry, new ReadTextFileSkill());
-        registerSkill(registry, new WriteFileSkill());
-        registerSkill(registry, new ListDirectorySkill());
-        registerSkill(registry, new GetFileInfoSkill());
-        registerSkill(registry, new MakeDirectorySkill());
-        registerSkill(registry, new DeleteFileSkill());
-        registerSkill(registry, new SearchFilesSkill());
-        registerSkill(registry, new BackupFileSkill());
-        registerSkill(registry, new CompareFilesSkill());
-        registerSkill(registry, new EnvironmentVariablesSkill());
+        // File tools (10)
+        registerTool(registry, new ReadTextFileTool());
+        registerTool(registry, new WriteFileTool());
+        registerTool(registry, new ListDirectoryTool());
+        registerTool(registry, new GetFileInfoTool());
+        registerTool(registry, new MakeDirectoryTool());
+        registerTool(registry, new DeleteFileTool());
+        registerTool(registry, new SearchFilesTool());
+        registerTool(registry, new BackupFileTool());
+        registerTool(registry, new CompareFilesTool());
+        registerTool(registry, new EnvironmentVariablesTool());
 
-        // Database skills (8)
-        registerSkill(registry, new QueryDatabaseSkill());
-        registerSkill(registry, new ListTablesSkill());
-        registerSkill(registry, new DescribeTableSkill());
-        registerSkill(registry, new ListIndexesSkill());
-        registerSkill(registry, new ListForeignKeysSkill());
-        registerSkill(registry, new ExplainQuerySkill());
-        registerSkill(registry, new ExportSchemaDdlSkill());
-        registerSkill(registry, new AnalyzeSchemaNormalizationSkill());
+        // Database tools (8)
+        registerTool(registry, new QueryDatabaseTool());
+        registerTool(registry, new ListTablesTool());
+        registerTool(registry, new DescribeTableTool());
+        registerTool(registry, new ListIndexesTool());
+        registerTool(registry, new ListForeignKeysTool());
+        registerTool(registry, new ExplainQueryTool());
+        registerTool(registry, new ExportSchemaDdlTool());
+        registerTool(registry, new AnalyzeSchemaNormalizationTool());
 
-        // System skills (4)
-        registerSkill(registry, new GetSystemInfoSkill());
-        registerSkill(registry, new ConvertTimeSkill());
-        registerSkill(registry, new ListServicesSkill(registry::listSkills));
-        registerSkill(registry, new GetVersionSkill());
+        // System tools (4)
+        registerTool(registry, new GetSystemInfoTool());
+        registerTool(registry, new ConvertTimeTool());
+        registerTool(registry, new ListServicesTool(registry::listTools));
+        registerTool(registry, new GetVersionTool());
 
-        // JSON skills (1)
-        registerSkill(registry, new JsonQuerySkill());
+        // JSON tools (1)
+        registerTool(registry, new JsonQueryTool());
 
-        // JavaScript / web migration skills (3)
-        registerSkill(registry, new AnalyzeJavaScriptSkill());
-        registerSkill(registry, new TranslateJavaScriptSkill());
-        registerSkill(registry, new TranslateWebappSkill());
+        // JavaScript / web migration tools (3)
+        registerTool(registry, new AnalyzeJavaScriptTool());
+        registerTool(registry, new TranslateJavaScriptTool());
+        registerTool(registry, new TranslateWebappTool());
 
-        // JavaFX skills (5)
-        registerSkill(registry, new InitCanvasSkill());
-        registerSkill(registry, new DrawCanvasSkill());
-        registerSkill(registry, new ClearCanvasSkill());
-        registerSkill(registry, new ExportCanvasSkill());
-        registerSkill(registry, new SetColorSkill());
+        // JavaFX tools (5)
+        registerTool(registry, new InitCanvasTool());
+        registerTool(registry, new DrawCanvasTool());
+        registerTool(registry, new ClearCanvasTool());
+        registerTool(registry, new ExportCanvasTool());
+        registerTool(registry, new SetColorTool());
 
-        // UI skills (6)
-        registerSkill(registry, new GenerateUICodeSkill());
-        registerSkill(registry, new GenerateCSSSkill());
-        registerSkill(registry, new ExtractDesignSystemSkill());
-        registerSkill(registry, new HtmlCssToJavaFxCssSkill());
-        registerSkill(registry, new GenerateJavaFxComponentSkill());
-        registerSkill(registry, new AnalyzeUiLayoutSkill());
+        // UI tools (6)
+        registerTool(registry, new GenerateUICodeTool());
+        registerTool(registry, new GenerateCSSTool());
+        registerTool(registry, new ExtractDesignSystemTool());
+        registerTool(registry, new HtmlCssToJavaFxCssTool());
+        registerTool(registry, new GenerateJavaFxComponentTool());
+        registerTool(registry, new AnalyzeUiLayoutTool());
 
-        // Design skills (2)
-        registerSkill(registry, new DesignTokensSkill());
-        registerSkill(registry, new AntiSlopReviewSkill());
+        // Design tools (2)
+        registerTool(registry, new DesignTokensTool());
+        registerTool(registry, new AntiSlopReviewTool());
 
-        // AI Coding skills (7)
-        registerSkill(registry, new AnalyzeCodeSkill());
-        registerSkill(registry, new GenerateCodeSkill());
-        registerSkill(registry, new GenerateTestsSkill());
-        registerSkill(registry, new GenerateDocsSkill());
-        registerSkill(registry, new RefactorCodeSkill());
-        registerSkill(registry, new CheckSecuritySkill());
-        registerSkill(registry, new FindTodosSkill());
+        // AI Coding tools (7)
+        registerTool(registry, new AnalyzeCodeTool());
+        registerTool(registry, new GenerateCodeTool());
+        registerTool(registry, new GenerateTestsTool());
+        registerTool(registry, new GenerateDocsTool());
+        registerTool(registry, new RefactorCodeTool());
+        registerTool(registry, new CheckSecurityTool());
+        registerTool(registry, new FindTodosTool());
 
-        // Spring Boot skills (20)
-        registerSkill(registry, new GenerateSpringBootEntitySkill());
-        registerSkill(registry, new GenerateSpringBootRepositorySkill());
-        registerSkill(registry, new GenerateSpringBootServiceSkill());
-        registerSkill(registry, new GenerateSpringBootControllerSkill());
-        registerSkill(registry, new GenerateSpringBootPropertiesSkill());
-        registerSkill(registry, new GenerateSpringBootDTOskill());
-        registerSkill(registry, new AnalyzeSpringBootProjectSkill());
-        registerSkill(registry, new GenerateSpringBootSecuritySkill());
-        registerSkill(registry, new GenerateSpringBootRelationshipSkill());
-        registerSkill(registry, new GenerateSpringBootActuatorSkill());
-        registerSkill(registry, new GenerateSpringBootExceptionHandlerSkill());
-        registerSkill(registry, new GenerateSpringBootValidationSkill());
-        registerSkill(registry, new GenerateSpringBootPaginationSkill());
-        registerSkill(registry, new GenerateSpringBootFileUploadSkill());
-        registerSkill(registry, new GenerateSpringBootScheduledSkill());
-        registerSkill(registry, new GenerateSpringBootAsyncSkill());
-        registerSkill(registry, new GenerateSpringBootCacheSkill());
-        registerSkill(registry, new GenerateSpringBootProfileSkill());
-        registerSkill(registry, new GenerateSpringBootDockerSkill());
-        registerSkill(registry, new GenerateSpringBootTestSkill());
+        // Spring Boot tools (20)
+        registerTool(registry, new GenerateSpringBootEntityTool());
+        registerTool(registry, new GenerateSpringBootRepositoryTool());
+        registerTool(registry, new GenerateSpringBootServiceTool());
+        registerTool(registry, new GenerateSpringBootControllerTool());
+        registerTool(registry, new GenerateSpringBootPropertiesTool());
+        registerTool(registry, new GenerateSpringBootDTOTool());
+        registerTool(registry, new AnalyzeSpringBootProjectTool());
+        registerTool(registry, new GenerateSpringBootSecurityTool());
+        registerTool(registry, new GenerateSpringBootRelationshipTool());
+        registerTool(registry, new GenerateSpringBootActuatorTool());
+        registerTool(registry, new GenerateSpringBootExceptionHandlerTool());
+        registerTool(registry, new GenerateSpringBootValidationTool());
+        registerTool(registry, new GenerateSpringBootPaginationTool());
+        registerTool(registry, new GenerateSpringBootFileUploadTool());
+        registerTool(registry, new GenerateSpringBootScheduledTool());
+        registerTool(registry, new GenerateSpringBootAsyncTool());
+        registerTool(registry, new GenerateSpringBootCacheTool());
+        registerTool(registry, new GenerateSpringBootProfileTool());
+        registerTool(registry, new GenerateSpringBootDockerTool());
+        registerTool(registry, new GenerateSpringBootTestTool());
 
-        // Diagnostic skills (5)
-        registerSkill(registry, new ProjectDiagnosticSkill());
-        registerSkill(registry, new FixMavenDependenciesSkill());
-        registerSkill(registry, new CreateMyDatabaseClientSkill());
-        registerSkill(registry, new FixJavaFXHeadlessSkill());
-        registerSkill(registry, new FixAllSkill());
+        // Diagnostic tools (5)
+        registerTool(registry, new ProjectDiagnosticTool());
+        registerTool(registry, new FixMavenDependenciesTool());
+        registerTool(registry, new CreateMyDatabaseClientTool());
+        registerTool(registry, new FixJavaFXHeadlessTool());
+        registerTool(registry, new FixAllTool());
 
         System.err.println("JavaBytes MCP Server starting... v" + AppConfig.SERVER_VERSION);
-        System.err.println("Registered tools: " + registry.getSkillCount()
+        System.err.println("Registered tools: " + registry.getToolCount()
                 + " of " + ToolMetadata.catalog().size() + " (" + FEATURES.describe() + ")");
         System.err.println("Sandbox roots: " + AppConfig.describeAllowedDirectories());
 
@@ -186,11 +186,11 @@ public class McpServerMain {
         System.exit(0);
     }
 
-    private static void registerSkill(McpServerRegistry registry, Skill skill) {
-        if (!FEATURES.isEnabled(skill.getName())) {
+    private static void registerTool(McpServerRegistry registry, Tool tool) {
+        if (!FEATURES.isEnabled(tool.getName())) {
             return;
         }
-        registry.register(skill);
+        registry.register(tool);
     }
 
     /**
@@ -271,8 +271,8 @@ public class McpServerMain {
                     case "tools/list" -> {
                         ObjectNode result = JsonUtils.MAPPER.createObjectNode();
                         ArrayNode tools = JsonUtils.MAPPER.createArrayNode();
-                        for (String name : registry.listSkills()) {
-                            tools.add(toolDescriptor(registry.getSkill(name)));
+                        for (String name : registry.listTools()) {
+                            tools.add(toolDescriptor(registry.getTool(name)));
                         }
                         result.set("tools", tools);
                         writeResult(result, id, System.out);
@@ -287,21 +287,21 @@ public class McpServerMain {
                             writeResponse(-32602, "Tool arguments must be a JSON object", id, System.out);
                             continue;
                         }
-                        Skill skill = registry.getSkill(toolName);
-                        if (skill == null) {
+                        Tool tool = registry.getTool(toolName);
+                        if (tool == null) {
                             writeResponse(-32602, unknownToolMessage(toolName), id, System.out);
                             continue;
                         }
                         try {
-                            JsonNode skillResult = registry.execute(toolName, args);
+                            JsonNode toolResult = registry.execute(toolName, args);
                             ObjectNode result = JsonUtils.MAPPER.createObjectNode();
                             ArrayNode content = JsonUtils.MAPPER.createArrayNode();
                             ObjectNode text = JsonUtils.MAPPER.createObjectNode();
                             text.put("type", "text");
-                            text.put("text", JsonUtils.MAPPER.writeValueAsString(skillResult));
+                            text.put("text", JsonUtils.MAPPER.writeValueAsString(toolResult));
                             content.add(text);
                             result.set("content", content);
-                            result.put("isError", skillResult.has("success") && !skillResult.get("success").asBoolean());
+                            result.put("isError", toolResult.has("success") && !toolResult.get("success").asBoolean());
                             writeResult(result, id, System.out);
                         } catch (Exception e) {
                             writeResponse(-32603, "Tool execution failed: " + e.getMessage(), id, System.out);
@@ -362,27 +362,27 @@ public class McpServerMain {
     }
 
     /** Build a tools/list entry (name, title, description, schema, annotations). */
-    static ObjectNode toolDescriptor(Skill skill) {
+    static ObjectNode toolDescriptor(Tool toolImpl) {
         ObjectNode tool = JsonUtils.MAPPER.createObjectNode();
-        tool.put("name", skill.getName());
-        tool.put("description", ToolDescriptions.describe(skill.getName()));
+        tool.put("name", toolImpl.getName());
+        tool.put("description", ToolDescriptions.describe(toolImpl.getName()));
 
-        ToolMetadata.Metadata metadata = ToolMetadata.get(skill.getName());
+        ToolMetadata.Metadata metadata = ToolMetadata.get(toolImpl.getName());
         tool.put("title", metadata.title());
 
         ObjectNode schema = JsonUtils.MAPPER.createObjectNode();
         schema.put("type", "object");
         ObjectNode properties = JsonUtils.MAPPER.createObjectNode();
-        Skill.JsonSchema input = skill.getInputSchema();
+        Tool.JsonSchema input = toolImpl.getInputSchema();
         for (java.util.Map.Entry<String, Object> e : input.getProperties().entrySet()) {
             ObjectNode prop = JsonUtils.MAPPER.createObjectNode();
-            if (e.getValue() instanceof Skill.StringSchema s) {
+            if (e.getValue() instanceof Tool.StringSchema s) {
                 prop.put("type", "string");
                 if (s.getDescription() != null) prop.put("description", s.getDescription());
-            } else if (e.getValue() instanceof Skill.BoolSchema b) {
+            } else if (e.getValue() instanceof Tool.BoolSchema b) {
                 prop.put("type", "boolean");
                 if (b.getDescription() != null) prop.put("description", b.getDescription());
-            } else if (e.getValue() instanceof Skill.NumberSchema n) {
+            } else if (e.getValue() instanceof Tool.NumberSchema n) {
                 prop.put("type", n.isInteger() ? "integer" : "number");
                 if (n.getDescription() != null) prop.put("description", n.getDescription());
                 if (n.getMinimum() != null) prop.put("minimum", n.getMinimum());

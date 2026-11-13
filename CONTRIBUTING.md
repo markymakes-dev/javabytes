@@ -57,13 +57,13 @@ database and credentials. Run them locally before touching the database tools.
 The server is 71 tools today; the catalog and the implementation are separate concerns and both
 must agree.
 
-1. **Implement a `Skill`** in `src/main/java/com/javabytes/mcp/skills/<area>/`.
+1. **Implement a `Tool`** in `src/main/java/com/javabytes/mcp/tools/<area>/`.
    `stdout` is reserved for JSON-RPC — log through `System.err` or the error helper, never
    `System.out`.
 2. **Describe it** in `src/main/java/com/javabytes/mcp/utils/ToolMetadata.java`: name, category,
    description, input schema. Tests in `ToolMetadataTest` and `ToolDescriptorTest` assert the
    catalog stays consistent, so a missing entry fails fast.
-3. **Register it** in `McpServerMain` with `registerSkill(registry, new YourSkill())`.
+3. **Register it** in `McpServerMain` with `registerTool(registry, new YourTool())`.
 4. **Test it** under `src/test/java/...`. A tool that touches the world (filesystem, database,
    process) needs a test that exercises the sandbox or connection, not just a happy-path string.
 5. **Document it** in `README.md` under *Tool catalog* and update the counts if they move.
