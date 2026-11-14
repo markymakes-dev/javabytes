@@ -35,6 +35,7 @@ public final class ToolDescriptions {
             Map.entry("explain_query", "Run MySQL EXPLAIN (or EXPLAIN ANALYZE) on a read-only SELECT and return the plan."),
             Map.entry("export_schema_ddl", "Export SHOW CREATE TABLE DDL for one table or every base table."),
             Map.entry("analyze_schema_normalization", "Review keys, foreign keys, indexes and sampled list-like columns for likely normal-form problems."),
+            Map.entry("extract_data_models", "Parse mongoose, prisma, sequelize, SQL or JSON data declarations into tables and columns, with per-field confidence and an honest limitations list."),
 
             // System
             Map.entry("get_system_info", "Report JVM, operating-system and hardware information."),

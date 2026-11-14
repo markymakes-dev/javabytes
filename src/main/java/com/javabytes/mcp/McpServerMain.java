@@ -103,6 +103,7 @@ public class McpServerMain {
         registerTool(registry, new ExplainQueryTool());
         registerTool(registry, new ExportSchemaDdlTool());
         registerTool(registry, new AnalyzeSchemaNormalizationTool());
+        registerTool(registry, new ExtractDataModelsTool());
 
         // System tools (4)
         registerTool(registry, new GetSystemInfoTool());

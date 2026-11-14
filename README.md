@@ -168,6 +168,7 @@ cannot expose the whole disk.
 | `javafx_export_image` | Snapshot to a real PNG via `SwingFXUtils` + `ImageIO` |
 | `project_diagnostic` | Evidence-based dependency/configuration check |
 | `analyze_springboot_project` | Spring Boot layout inspection |
+| `extract_data_models` | Parse mongoose/prisma/sequelize/SQL/JSON data declarations into tables and columns, with per-field confidence and an honest limitations list |
 | `fix_javafx_headless` | Adds the Monocle property (dry run by default; `apply=true` to write) |
 | `create_mysql_client` | Generates a self-contained JDBC helper that reads credentials from env |
 | `get_system_info` | JVM/OS/hardware info |
