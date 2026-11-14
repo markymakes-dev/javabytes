@@ -170,7 +170,7 @@ public final class ToolMetadata {
         m.put("check_security", read("Check Security Issues", ANALYSIS));
         m.put("analyze_ui_layout", read("Analyze UI Layout", ANALYSIS));
         m.put("extract_data_models", readOpen("Extract Data Models", ANALYSIS));
-        m.put("models_to_schema", read("Generate Schema from Models", ANALYSIS));
+        m.put("models_to_schema", readOpen("Generate Schema from Models", ANALYSIS));
         m.put("extract_design_system", read("Extract Design System", ANALYSIS));
         m.put("html_css_to_javafx_css", read("Convert HTML/CSS to JavaFX CSS", ANALYSIS));
         m.put("analyze_javascript", read("Analyze JavaScript/TypeScript", ANALYSIS));
