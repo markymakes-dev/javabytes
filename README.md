@@ -187,7 +187,7 @@ cannot expose the whole disk.
 `generate_code`, `generate_tests`, `generate_docs`, `refactor_code`, `check_security`,
 `find_todos`, `analyze_code`, `generate_css`, `generate_ui_code`, `generate_javafx_component`,
 `extract_design_system`, `analyze_ui_layout`, `html_css_to_javafx_css`, `design_tokens`,
-`anti_slop_review`, `json_query`, `convert_time`, `get_version`, `list_services`, and the
+`anti_slop_review`, `translate_webapp`, `json_query`, `convert_time`, `get_version`, `list_services`, and the
 `springboot_generate_*` family (entity, repository, service, controller, DTO, properties,
 security, relationship, actuator, exception handler, validation, pagination, file upload,
 scheduled, async, cache, profile, docker, test).

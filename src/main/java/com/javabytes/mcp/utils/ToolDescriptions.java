@@ -62,7 +62,7 @@ public final class ToolDescriptions {
             Map.entry("html_css_to_javafx_css", "Translate HTML/CSS declarations into valid JavaFX CSS and report unsupported properties."),
             Map.entry("analyze_javascript", "Inventory a JS/TS file or project: frameworks, npm dependencies, routes, components, browser APIs and migration risks."),
             Map.entry("translate_javascript", "Translate the safely typed subset of JS/TS to a compilable Java class and report everything that needs manual work."),
-            Map.entry("translate_webapp", "Produce a migration plan for a web app and optionally scaffold a Spring Boot or JavaFX project."),
+            Map.entry("translate_webapp", "Produce a migration plan for a web app and generate a complete, runnable target project: a keep-frontend Spring Boot REST backend that serves the original frontend pixel-identical, a Vaadin browser UI, a JavaFX desktop shell, or (auto) a classifier-picked strategy with reasons; with optional ticket #2 data models it derives JPA entities, Spring Data JPA repositories and real CRUD controllers. Returns a complete file map (paths to contents)."),
             Map.entry("generate_javafx_component", "Generate a reusable JavaFX component class from a specification."),
             Map.entry("analyze_ui_layout", "Analyze a UI layout description and report spacing, hierarchy and accessibility concerns."),
 
