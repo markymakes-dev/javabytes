@@ -316,7 +316,12 @@ class ExtractDataModelsToolTest {
     @Test
     void pathOutsideSandboxIsRejected() {
         ObjectNode p = com.javabytes.mcp.utils.JsonUtils.MAPPER.createObjectNode();
-        p.put("path", "C:/Windows/System32/drivers/etc/hosts");
+        // A Windows-style path is relative on Unix and resolves inside cwd (then
+        // doesn't exist), so pick a file that exists outside the sandbox on each
+        // platform.
+        p.put("path", System.getProperty("os.name").startsWith("Windows")
+            ? "C:\\Windows\\System32\\drivers\\etc\\hosts"
+            : "/etc/passwd");
         JsonNode result = TOOL.execute(p);
         assertFalse(result.get("success").asBoolean());
         assertEquals("PATH_NOT_ALLOWED", result.get("error").asText());
