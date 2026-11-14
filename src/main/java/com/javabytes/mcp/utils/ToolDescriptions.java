@@ -37,6 +37,7 @@ public final class ToolDescriptions {
             Map.entry("analyze_schema_normalization", "Review keys, foreign keys, indexes and sampled list-like columns for likely normal-form problems."),
             Map.entry("extract_data_models", "Parse mongoose, prisma, sequelize, SQL or JSON data declarations into tables and columns, with per-field confidence and an honest limitations list."),
             Map.entry("models_to_schema", "Convert parsed schema models into normalized schema proposals: proposed DDL, pass-through verdicts, and a verification list of medium/low-confidence fields."),
+            Map.entry("generate_database", "Execute proposed normalized DDL against a user-supplied JDBC URL to create the schema (creates only; refuses existing-table collision unless confirm=true)."),
 
             // System
             Map.entry("get_system_info", "Report JVM, operating-system and hardware information."),
