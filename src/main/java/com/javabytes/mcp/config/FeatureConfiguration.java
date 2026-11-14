@@ -1,5 +1,6 @@
 package com.javabytes.mcp.config;
 
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ToolMetadata;
 
 import java.util.Collections;
@@ -82,9 +83,14 @@ public final class FeatureConfiguration {
     }
 
     public boolean isEnabled(String toolName) {
-        ToolMetadata.Metadata metadata = ToolMetadata.get(toolName);
+        // ADR 0006: a tool without a catalog entry is uncataloged and fails
+        // closed — disabled, whatever the environment asks for.
+        ToolSpec spec = ToolMetadata.get(toolName);
+        if (spec == null) {
+            return false;
+        }
         String name = toolName.toLowerCase(Locale.ROOT);
-        String category = metadata.category();
+        String category = spec.category();
 
         if (disabledNames.contains(name)) {
             return false;
@@ -104,7 +110,7 @@ public final class FeatureConfiguration {
         if (enableAll) {
             return true;
         }
-        return metadata.enabledByDefault();
+        return spec.enabledByDefault();
     }
 
     /** Short human-readable summary for the startup log. */

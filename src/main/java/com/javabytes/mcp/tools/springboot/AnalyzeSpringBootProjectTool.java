@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.config.AppConfig;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -20,6 +21,20 @@ public class AnalyzeSpringBootProjectTool implements Tool {
 
     @Override
     public String getName() { return "analyze_springboot_project"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "analyze_springboot_project",
+                "Analyze Spring Boot Project",
+                "Inspect a Spring Boot project and report missing layers, configuration and dependency issues.",
+                "analysis",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

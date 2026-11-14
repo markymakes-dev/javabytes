@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.config.AppConfig;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -20,6 +21,20 @@ public class FixAllTool implements Tool {
 
     @Override
     public String getName() { return "fix_all"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "fix_all",
+                "Run All Diagnostics",
+                "Run all diagnostics, apply safe fixes and summarize what changed.",
+                "diagnostics",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

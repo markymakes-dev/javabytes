@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -14,6 +15,20 @@ public class CheckSecurityTool implements Tool {
 
     @Override
     public String getName() { return "check_security"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "check_security",
+                "Check Security Issues",
+                "Scan Java source for common security issues such as injection and weak crypto.",
+                "analysis",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

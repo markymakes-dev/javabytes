@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.code;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -10,6 +11,20 @@ public class GenerateTestsTool implements Tool {
 
     @Override
     public String getName() { return "generate_tests"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "generate_tests",
+                "Generate JUnit Tests",
+                "Generate JUnit tests for a Java class or method.",
+                "codegen",
+                false,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

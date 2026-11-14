@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.database;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.javabytes.mcp.database.MyDatabaseClient;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -17,6 +18,20 @@ public class DescribeTableTool implements Tool {
 
     @Override
     public String getName() { return "describe_table"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "describe_table",
+                "Describe Database Table",
+                "Describe the columns, types, keys and defaults of a database table.",
+                "database",
+                true,
+                true,
+                false,
+                true,
+                true);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

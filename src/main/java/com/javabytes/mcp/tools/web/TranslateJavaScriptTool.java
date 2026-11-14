@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.config.AppConfig;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -20,6 +21,20 @@ public class TranslateJavaScriptTool implements Tool {
 
     @Override
     public String getName() { return "translate_javascript"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "translate_javascript",
+                "Translate JavaScript to Java",
+                "Translate the safely typed subset of JS/TS to a compilable Java class and report everything that needs manual work.",
+                "codegen",
+                false,
+                false,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

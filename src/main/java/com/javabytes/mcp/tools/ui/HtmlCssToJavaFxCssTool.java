@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -71,6 +72,20 @@ public class HtmlCssToJavaFxCssTool implements Tool {
 
     @Override
     public String getName() { return "html_css_to_javafx_css"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "html_css_to_javafx_css",
+                "Convert HTML/CSS to JavaFX CSS",
+                "Translate HTML/CSS declarations into valid JavaFX CSS and report unsupported properties.",
+                "analysis",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

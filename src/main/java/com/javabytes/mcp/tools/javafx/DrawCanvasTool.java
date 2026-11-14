@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.javafx;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import javafx.scene.canvas.GraphicsContext;
@@ -12,6 +13,20 @@ public class DrawCanvasTool implements Tool {
 
     @Override
     public String getName() { return "javafx_draw_canvas"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "javafx_draw_canvas",
+                "Draw on Canvas",
+                "Draw shapes and primitives onto the active off-screen canvas.",
+                "javafx",
+                true,
+                false,
+                false,
+                false,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

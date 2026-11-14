@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.springboot;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -10,6 +11,20 @@ public class GenerateSpringBootProfileTool implements Tool {
 
     @Override
     public String getName() { return "springboot_generate_profile"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "springboot_generate_profile",
+                "Generate Profiles",
+                "Generate profile-specific configuration (dev, test, prod).",
+                "springboot",
+                false,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

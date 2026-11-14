@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.config.AppConfig;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -65,6 +66,20 @@ public class TranslateWebappTool implements Tool {
 
     @Override
     public String getName() { return "translate_webapp"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "translate_webapp",
+                "Plan Web App Migration",
+                "Produce a migration plan for a web app and generate a complete, runnable target project: a keep-frontend Spring Boot REST backend that serves the original frontend pixel-identical, a Vaadin browser UI, a JavaFX desktop shell, or (auto) a classifier-picked strategy with reasons; with optional ticket #2 data models it derives JPA entities, Spring Data JPA repositories and real CRUD controllers. Returns a complete file map (paths to contents).",
+                "codegen",
+                false,
+                false,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.database.MyDatabaseClient;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -20,6 +21,20 @@ public class ExplainQueryTool implements Tool {
 
     @Override
     public String getName() { return "explain_query"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "explain_query",
+                "Explain Query Plan",
+                "Run MySQL EXPLAIN (or EXPLAIN ANALYZE) on a read-only SELECT and return the plan.",
+                "database",
+                true,
+                true,
+                false,
+                true,
+                true);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

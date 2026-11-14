@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.file;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -14,6 +15,20 @@ public class ReadTextFileTool implements Tool {
 
     @Override
     public String getName() { return "read_text_file"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "read_text_file",
+                "Read Text File",
+                "Read a UTF-8 text file inside an allowed directory and return its contents.",
+                "files",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

@@ -13,6 +13,7 @@ import com.javabytes.mcp.schema.Relation;
 import com.javabytes.mcp.schema.SchemaModel;
 import com.javabytes.mcp.schema.Table;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -58,6 +59,20 @@ public class AnalyzeSchemaNormalizationTool implements Tool {
 
     @Override
     public String getName() { return "analyze_schema_normalization"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "analyze_schema_normalization",
+                "Analyze Schema Normalization",
+                "Review keys, foreign keys, indexes and sampled list-like columns for likely normal-form problems.",
+                "database",
+                true,
+                true,
+                false,
+                true,
+                true);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

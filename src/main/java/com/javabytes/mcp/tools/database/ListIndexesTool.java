@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.database.MyDatabaseClient;
 import com.javabytes.mcp.database.SchemaCatalog;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -21,6 +22,20 @@ public class ListIndexesTool implements Tool {
 
     @Override
     public String getName() { return "list_indexes"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "list_indexes",
+                "List Indexes",
+                "List indexes, uniqueness and column order for a table or the whole schema.",
+                "database",
+                true,
+                true,
+                false,
+                true,
+                true);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

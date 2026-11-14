@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.config.AppConfig;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -29,6 +30,20 @@ public class ExportCanvasTool implements Tool {
 
     @Override
     public String getName() { return "javafx_export_image"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "javafx_export_image",
+                "Export Canvas as PNG",
+                "Export the active off-screen canvas to a PNG image file.",
+                "javafx",
+                true,
+                false,
+                true,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

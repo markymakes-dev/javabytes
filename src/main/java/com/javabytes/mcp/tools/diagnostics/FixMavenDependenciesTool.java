@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.config.AppConfig;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -20,6 +21,20 @@ public class FixMavenDependenciesTool implements Tool {
 
     @Override
     public String getName() { return "fix_maven_dependencies"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "fix_maven_dependencies",
+                "Check Maven Dependencies",
+                "Detect and report incorrect or missing Maven dependencies with suggested fixes.",
+                "diagnostics",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

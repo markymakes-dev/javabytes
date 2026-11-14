@@ -3,6 +3,8 @@ package com.javabytes.mcp;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.system.GetVersionTool;
 import com.javabytes.mcp.utils.JsonUtils;
+import com.javabytes.mcp.utils.ToolMetadata;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,6 +13,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ToolDescriptorTest {
+
+    @BeforeAll
+    static void deriveCatalog() {
+        // unknownToolMessage resolves the cataloged category, so the derived
+        // catalog must exist (ADR 0006).
+        ToolMetadata.derive(McpServerMain.declaredTools());
+    }
+
 
     @Test
     void descriptorCarriesTitleDescriptionSchemaAndAnnotations() {

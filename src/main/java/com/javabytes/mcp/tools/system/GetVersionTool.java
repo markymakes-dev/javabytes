@@ -3,12 +3,27 @@ package com.javabytes.mcp.tools.system;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.JsonUtils;
 
 public class GetVersionTool implements Tool {
 
     @Override
     public String getName() { return "get_version"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "get_version",
+                "Get Server Version",
+                "Return the JavaBytes server and Java runtime versions.",
+                "system",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

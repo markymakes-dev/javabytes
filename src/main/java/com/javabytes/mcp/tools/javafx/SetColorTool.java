@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.javafx;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import javafx.scene.paint.Color;
@@ -11,6 +12,20 @@ public class SetColorTool implements Tool {
 
     @Override
     public String getName() { return "javafx_set_color"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "javafx_set_color",
+                "Set Canvas Color",
+                "Set the current fill or stroke color used by canvas drawing operations.",
+                "javafx",
+                true,
+                false,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -14,6 +15,20 @@ public class AnalyzeUiLayoutTool implements Tool {
 
     @Override
     public String getName() { return "analyze_ui_layout"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "analyze_ui_layout",
+                "Analyze UI Layout",
+                "Analyze a UI layout description and report spacing, hierarchy and accessibility concerns.",
+                "analysis",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

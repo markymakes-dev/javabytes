@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.file;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -13,6 +14,20 @@ public class DeleteFileTool implements Tool {
 
     @Override
     public String getName() { return "delete_file"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "delete_file",
+                "Delete File",
+                "Delete a file or an empty directory inside an allowed directory.",
+                "files",
+                true,
+                false,
+                true,
+                false,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

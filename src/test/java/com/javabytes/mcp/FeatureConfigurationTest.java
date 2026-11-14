@@ -1,12 +1,22 @@
 package com.javabytes.mcp;
 
 import com.javabytes.mcp.config.FeatureConfiguration;
+import com.javabytes.mcp.utils.ToolMetadata;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FeatureConfigurationTest {
+
+    @BeforeAll
+    static void deriveCatalog() {
+        // ADR 0006: the catalog is derived from the registered tools; the
+        // feature configuration resolves names and categories against it.
+        ToolMetadata.derive(McpServerMain.declaredTools());
+    }
+
 
     @Test
     void defaultsEnableCapabilitiesAndDisableGenerators() {

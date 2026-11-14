@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -14,6 +15,20 @@ public class FindTodosTool implements Tool {
 
     @Override
     public String getName() { return "find_todos"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "find_todos",
+                "Find TODO Markers",
+                "Find TODO, FIXME and HACK markers in a source tree.",
+                "analysis",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

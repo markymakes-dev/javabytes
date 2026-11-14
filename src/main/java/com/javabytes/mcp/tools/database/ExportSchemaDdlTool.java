@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.database.MyDatabaseClient;
 import com.javabytes.mcp.database.SchemaCatalog;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -23,6 +24,20 @@ public class ExportSchemaDdlTool implements Tool {
 
     @Override
     public String getName() { return "export_schema_ddl"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "export_schema_ddl",
+                "Export Schema DDL",
+                "Export SHOW CREATE TABLE DDL for one table or every base table.",
+                "database",
+                true,
+                true,
+                false,
+                true,
+                true);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.springboot;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -10,6 +11,20 @@ public class GenerateSpringBootAsyncTool implements Tool {
 
     @Override
     public String getName() { return "springboot_generate_async"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "springboot_generate_async",
+                "Generate Async Config",
+                "Generate asynchronous service methods and the required executor configuration.",
+                "springboot",
+                false,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

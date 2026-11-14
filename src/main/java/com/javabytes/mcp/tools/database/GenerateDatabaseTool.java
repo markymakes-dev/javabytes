@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.config.AppConfig;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -29,9 +30,8 @@ import java.util.List;
  * flag it refuses rather than risk silently colliding with an existing
  * schema (see {@code docs/adr/0005-generate-database-creates-does-not-migrate.md}).</p>
  *
- * <p>Pure Java — no new dependencies. Reuses {@link MyDatabaseClient} for the
- * write path and {@link PathValidator} for sandbox-validated file reads when
- * DDL comes from a {@code path} param.</p>
+ * <p>Pure Java — no new dependencies. Uses {@link PathValidator} for
+ * sandbox-validated file reads when DDL comes from a {@code path} param.</p>
  */
 public class GenerateDatabaseTool implements Tool {
 
@@ -60,6 +60,20 @@ public class GenerateDatabaseTool implements Tool {
     @Override
     public String getName() {
         return NAME;
+    }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "generate_database",
+                "Generate Database from DDL",
+                "Execute proposed normalized DDL against a user-supplied JDBC URL to create the schema (creates only; refuses existing-table collision unless confirm=true).",
+                "analysis",
+                true,
+                false,
+                true,
+                false,
+                false);
     }
 
     @Override

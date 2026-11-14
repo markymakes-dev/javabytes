@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.config.AppConfig;
 import com.javabytes.mcp.config.FeatureConfiguration;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.tools.database.*;
 import com.javabytes.mcp.tools.design.*;
 import com.javabytes.mcp.tools.diagnostics.*;
@@ -20,17 +21,23 @@ import com.javabytes.mcp.tools.web.*;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.ProtocolLogger;
 import com.javabytes.mcp.utils.Roots;
-import com.javabytes.mcp.utils.ToolDescriptions;
 import com.javabytes.mcp.utils.ToolMetadata;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class McpServerMain {
+
+    /** Tools declared on this JVM, in declaration order (ADR 0006: the catalog derives from these). */
+    private static final List<Tool> TOOL_INSTANCES = new ArrayList<>();
+
+    /** Feature configuration, parsed once the full catalog exists (ADR 0006). */
+    private static volatile FeatureConfiguration features;
 
     /**
      * Protocol versions this server understands, newest first. Mirrors the
@@ -41,9 +48,6 @@ public class McpServerMain {
             "2025-06-18",
             "2025-03-26",
             "2024-11-05");
-
-    /** Which tools are registered, based on JAVABYTES_ENABLE/JAVABYTES_DISABLE. */
-    private static final FeatureConfiguration FEATURES = FeatureConfiguration.fromEnvironment();
 
     /**
      * Workflow guidance returned from initialize. This is the place to explain
@@ -81,7 +85,37 @@ public class McpServerMain {
 
     public static void main(String[] args) {
         McpServerRegistry registry = new McpServerRegistry();
+        declareAllTools(registry);
 
+        // ADR 0006: the catalog is derived from the tools declared above. The
+        // full list must exist before feature configuration is parsed, so the
+        // enabled set is registered here rather than during declaration. A
+        // declared tool whose spec is missing or mismatched fails closed: it
+        // is warned about, never cataloged, never registered.
+        FeatureConfiguration featureConfig = features();
+        for (Tool tool : TOOL_INSTANCES) {
+            if (featureConfig.isEnabled(tool.getName())) {
+                registry.register(tool);
+            }
+        }
+
+        System.err.println("JavaBytes MCP Server starting... v" + AppConfig.SERVER_VERSION);
+        System.err.println("Registered tools: " + registry.getToolCount()
+                + " of " + ToolMetadata.catalog().size() + " (" + featureConfig.describe() + ")");
+        System.err.println("Sandbox roots: " + AppConfig.describeAllowedDirectories());
+
+        startServer(registry);
+        // The JavaFX toolkit, if it was started for canvas rendering, uses a
+        // non-daemon thread. Exit explicitly once stdin closes.
+        System.exit(0);
+    }
+
+    /**
+     * Declares every tool JavaBytes ships, in startup order. Declaration only:
+     * {@link #main} registers the enabled set after {@link #features()} derives
+     * the catalog from the complete list.
+     */
+    private static void declareAllTools(McpServerRegistry registry) {
         // File tools (10)
         registerTool(registry, new ReadTextFileTool());
         registerTool(registry, new WriteFileTool());
@@ -94,7 +128,7 @@ public class McpServerMain {
         registerTool(registry, new CompareFilesTool());
         registerTool(registry, new EnvironmentVariablesTool());
 
-        // Database tools (8)
+        // Database tools (11)
         registerTool(registry, new QueryDatabaseTool());
         registerTool(registry, new ListTablesTool());
         registerTool(registry, new DescribeTableTool());
@@ -177,23 +211,35 @@ public class McpServerMain {
         registerTool(registry, new CreateMyDatabaseClientTool());
         registerTool(registry, new FixJavaFXHeadlessTool());
         registerTool(registry, new FixAllTool());
-
-        System.err.println("JavaBytes MCP Server starting... v" + AppConfig.SERVER_VERSION);
-        System.err.println("Registered tools: " + registry.getToolCount()
-                + " of " + ToolMetadata.catalog().size() + " (" + FEATURES.describe() + ")");
-        System.err.println("Sandbox roots: " + AppConfig.describeAllowedDirectories());
-
-        startServer(registry);
-        // The JavaFX toolkit, if it was started for canvas rendering, uses a
-        // non-daemon thread. Exit explicitly once stdin closes.
-        System.exit(0);
     }
 
+    /** Declares a tool; registration happens once the catalog is derived. */
     private static void registerTool(McpServerRegistry registry, Tool tool) {
-        if (!FEATURES.isEnabled(tool.getName())) {
-            return;
+        TOOL_INSTANCES.add(tool);
+    }
+
+    /**
+     * Every declared tool, in startup order. Idempotent per JVM; lets tests
+     * and tooling see the full registration list without a running server
+     * (ADR 0006).
+     */
+    static synchronized List<Tool> declaredTools() {
+        if (TOOL_INSTANCES.isEmpty()) {
+            declareAllTools(new McpServerRegistry());
         }
-        registry.register(tool);
+        return List.copyOf(TOOL_INSTANCES);
+    }
+
+    /**
+     * The catalog-derived feature configuration. Safe to call outside the
+     * startup path (tests, tooling): it declares and derives on first use.
+     */
+    static synchronized FeatureConfiguration features() {
+        if (features == null) {
+            ToolMetadata.derive(declaredTools());
+            features = FeatureConfiguration.fromEnvironment();
+        }
+        return features;
     }
 
     /**
@@ -326,7 +372,7 @@ public class McpServerMain {
     }
 
     static String unknownToolMessage(String toolName) {
-        if (ToolMetadata.isKnown(toolName) && !FEATURES.isEnabled(toolName)) {
+        if (ToolMetadata.isKnown(toolName) && !features().isEnabled(toolName)) {
             return "Tool '" + toolName + "' is disabled by feature configuration (category: "
                     + ToolMetadata.get(toolName).category()
                     + "). Enable it with JAVABYTES_ENABLE=" + toolName
@@ -366,12 +412,12 @@ public class McpServerMain {
 
     /** Build a tools/list entry (name, title, description, schema, annotations). */
     static ObjectNode toolDescriptor(Tool toolImpl) {
+        // ADR 0006: the descriptor comes straight from the tool's own spec.
+        ToolSpec spec = toolImpl.spec();
         ObjectNode tool = JsonUtils.MAPPER.createObjectNode();
         tool.put("name", toolImpl.getName());
-        tool.put("description", ToolDescriptions.describe(toolImpl.getName()));
-
-        ToolMetadata.Metadata metadata = ToolMetadata.get(toolImpl.getName());
-        tool.put("title", metadata.title());
+        tool.put("description", spec.description());
+        tool.put("title", spec.title());
 
         ObjectNode schema = JsonUtils.MAPPER.createObjectNode();
         schema.put("type", "object");
@@ -402,11 +448,11 @@ public class McpServerMain {
         tool.set("inputSchema", schema);
 
         ObjectNode annotations = JsonUtils.MAPPER.createObjectNode();
-        annotations.put("title", metadata.title());
-        annotations.put("readOnlyHint", metadata.readOnly());
-        annotations.put("destructiveHint", metadata.destructive());
-        annotations.put("idempotentHint", metadata.idempotent());
-        annotations.put("openWorldHint", metadata.openWorld());
+        annotations.put("title", spec.title());
+        annotations.put("readOnlyHint", spec.readOnlyHint());
+        annotations.put("destructiveHint", spec.destructiveHint());
+        annotations.put("idempotentHint", spec.idempotentHint());
+        annotations.put("openWorldHint", spec.openWorldHint());
         tool.set("annotations", annotations);
         return tool;
     }

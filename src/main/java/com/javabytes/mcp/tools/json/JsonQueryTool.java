@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -14,6 +15,20 @@ public class JsonQueryTool implements Tool {
 
     @Override
     public String getName() { return "json_query"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "json_query",
+                "Query JSON",
+                "Query a JSON document with a dot/bracket path and optionally return pretty output.",
+                "json",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

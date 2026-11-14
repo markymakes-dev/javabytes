@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.ui;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -10,6 +11,20 @@ public class GenerateJavaFxComponentTool implements Tool {
 
     @Override
     public String getName() { return "generate_javafx_component"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "generate_javafx_component",
+                "Generate JavaFX Component",
+                "Generate a reusable JavaFX component class from a specification.",
+                "ui",
+                false,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

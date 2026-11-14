@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.file;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -14,6 +15,20 @@ public class WriteFileTool implements Tool {
 
     @Override
     public String getName() { return "write_file"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "write_file",
+                "Write Text File",
+                "Create or overwrite a text file inside an allowed directory.",
+                "files",
+                true,
+                false,
+                true,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.ui;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -19,6 +20,20 @@ public class GenerateUICodeTool implements Tool {
 
     @Override
     public String getName() { return "generate_ui_code"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "generate_ui_code",
+                "Generate UI Code",
+                "Generate compilable JavaFX component code and matching JavaFX CSS for a variant.",
+                "ui",
+                false,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

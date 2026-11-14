@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.config.AppConfig;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -19,6 +20,20 @@ public class SearchFilesTool implements Tool {
 
     @Override
     public String getName() { return "search_files"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "search_files",
+                "Search Files",
+                "Find files by glob name pattern and, optionally, a regular expression on their contents.",
+                "files",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

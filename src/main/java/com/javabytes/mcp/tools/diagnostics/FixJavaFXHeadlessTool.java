@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.config.AppConfig;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -25,6 +26,20 @@ public class FixJavaFXHeadlessTool implements Tool {
 
     @Override
     public String getName() { return "fix_javafx_headless"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "fix_javafx_headless",
+                "Configure Headless JavaFX",
+                "Detect and explain headless JavaFX problems and generate the required configuration.",
+                "diagnostics",
+                true,
+                false,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

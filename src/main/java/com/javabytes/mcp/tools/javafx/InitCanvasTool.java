@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.javafx;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -10,6 +11,20 @@ public class InitCanvasTool implements Tool {
 
     @Override
     public String getName() { return "javafx_init_canvas"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "javafx_init_canvas",
+                "Create Canvas",
+                "Create an off-screen JavaFX canvas with the given width and height.",
+                "javafx",
+                true,
+                false,
+                false,
+                false,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

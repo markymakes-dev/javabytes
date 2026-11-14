@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.springboot;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -14,6 +15,20 @@ public class GenerateSpringBootDockerTool implements Tool {
 
     @Override
     public String getName() { return "springboot_generate_docker"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "springboot_generate_docker",
+                "Generate Dockerfile",
+                "Generate a multi-stage Dockerfile and docker-compose file for a Spring Boot service.",
+                "springboot",
+                false,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

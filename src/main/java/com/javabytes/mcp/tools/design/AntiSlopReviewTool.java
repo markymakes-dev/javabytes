@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -14,6 +15,20 @@ public class AntiSlopReviewTool implements Tool {
 
     @Override
     public String getName() { return "anti_slop_review"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "anti_slop_review",
+                "Review for Generic UI",
+                "Review UI code or a design description for generic, low-quality visual patterns.",
+                "design",
+                false,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

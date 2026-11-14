@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.file;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -13,6 +14,20 @@ public class GetFileInfoTool implements Tool {
 
     @Override
     public String getName() { return "get_file_info"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "get_file_info",
+                "Get File Info",
+                "Return existence, type, size, timestamps and permissions for a path.",
+                "files",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

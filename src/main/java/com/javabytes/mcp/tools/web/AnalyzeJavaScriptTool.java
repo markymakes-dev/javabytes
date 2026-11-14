@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.config.AppConfig;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -20,6 +21,20 @@ public class AnalyzeJavaScriptTool implements Tool {
 
     @Override
     public String getName() { return "analyze_javascript"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "analyze_javascript",
+                "Analyze JavaScript/TypeScript",
+                "Inventory a JS/TS file or project: frameworks, npm dependencies, routes, components, browser APIs and migration risks.",
+                "analysis",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

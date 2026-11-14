@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -14,6 +15,20 @@ public class AnalyzeCodeTool implements Tool {
 
     @Override
     public String getName() { return "analyze_code"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "analyze_code",
+                "Analyze Java Code",
+                "Analyze Java source for complexity, smells and structural problems.",
+                "analysis",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

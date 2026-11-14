@@ -11,6 +11,7 @@ import com.javabytes.mcp.schema.MySqlDdlWriter;
 import com.javabytes.mcp.schema.SchemaModel;
 import com.javabytes.mcp.schema.Table;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -48,6 +49,20 @@ public class ModelsToSchemaTool implements Tool {
     @Override
     public String getName() {
         return NAME;
+    }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "models_to_schema",
+                "Generate Schema from Models",
+                "Convert parsed schema models into normalized schema proposals: proposed DDL, pass-through verdicts, and a verification list of medium/low-confidence fields.",
+                "analysis",
+                true,
+                true,
+                false,
+                true,
+                true);
     }
 
     @Override

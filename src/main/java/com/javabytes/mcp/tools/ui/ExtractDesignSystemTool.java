@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.ui;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -10,6 +11,20 @@ public class ExtractDesignSystemTool implements Tool {
 
     @Override
     public String getName() { return "extract_design_system"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "extract_design_system",
+                "Extract Design System",
+                "Extract colors, typography and spacing tokens from CSS or HTML into a design system.",
+                "analysis",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

@@ -1,8 +1,8 @@
 # JavaBytes
 
 A general-purpose Java MCP server. It speaks JSON-RPC 2.0 over stdio, with the
-protocol hand-rolled on Jackson and no MCP SDK dependency. The catalog holds 71
-tools: 41 enabled by default and 30 opt-in generators.
+protocol hand-rolled on Jackson and no MCP SDK dependency. The catalog holds 74
+tools: 44 enabled by default and 30 opt-in generators.
 
 User-facing install, configuration and per-tool documentation live in
 `README.md` and `npm/README.md`. This file is for agents working on the code.

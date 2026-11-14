@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.JsonUtils;
 
 import java.util.List;
@@ -22,6 +23,20 @@ public class ListServicesTool implements Tool {
 
     @Override
     public String getName() { return "list_services"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "list_services",
+                "List Enabled Tools",
+                "List all tools currently registered by this JavaBytes server.",
+                "system",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -13,6 +14,20 @@ public class GetSystemInfoTool implements Tool {
 
     @Override
     public String getName() { return "get_system_info"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "get_system_info",
+                "Get System Info",
+                "Report JVM, operating-system and hardware information.",
+                "system",
+                true,
+                true,
+                false,
+                true,
+                true);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

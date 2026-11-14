@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.config.AppConfig;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -26,6 +27,20 @@ public class CreateMyDatabaseClientTool implements Tool {
 
     @Override
     public String getName() { return "create_mysql_client"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "create_mysql_client",
+                "Generate MySQL Client",
+                "Generate a MySQL JDBC client helper class with safe connection handling.",
+                "diagnostics",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

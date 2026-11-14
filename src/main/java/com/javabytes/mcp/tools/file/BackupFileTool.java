@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.file;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -14,6 +15,20 @@ public class BackupFileTool implements Tool {
 
     @Override
     public String getName() { return "backup_file"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "backup_file",
+                "Back Up File",
+                "Copy a file to a timestamped sibling backup without overwriting existing backups.",
+                "files",
+                true,
+                false,
+                false,
+                false,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

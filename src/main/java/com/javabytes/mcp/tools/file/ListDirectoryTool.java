@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 import com.javabytes.mcp.utils.PathValidator;
@@ -15,6 +16,20 @@ public class ListDirectoryTool implements Tool {
 
     @Override
     public String getName() { return "list_directory"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "list_directory",
+                "List Directory",
+                "List the entries of a directory with type and size information.",
+                "files",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

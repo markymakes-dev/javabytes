@@ -6,6 +6,9 @@ public interface Tool {
 
     String getName();
 
+    /** This tool's self-declared catalog entry (ADR 0006). */
+    ToolSpec spec();
+
     JsonNode execute(JsonNode params);
 
     JsonSchema getInputSchema();

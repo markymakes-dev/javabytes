@@ -101,32 +101,6 @@ public class MyDatabaseClient {
         }
     }
 
-    public JsonNode update(String sql) {
-        try (Connection conn = dataSource.getConnection();
-             Statement stmt = conn.createStatement()) {
-
-            int rowsAffected = stmt.executeUpdate(sql);
-            ObjectNode result = JsonUtils.MAPPER.createObjectNode();
-            result.put("success", true);
-            result.put("rows_affected", rowsAffected);
-            result.put("sql", sql);
-            return result;
-        } catch (SQLException e) {
-            return error("database_error", e.getMessage());
-        }
-    }
-
-    public JsonNode ping() {
-        try (Connection conn = dataSource.getConnection()) {
-            ObjectNode result = JsonUtils.MAPPER.createObjectNode();
-            result.put("success", true);
-            result.put("message", "Database connection OK");
-            return result;
-        } catch (SQLException e) {
-            return error("database_error", e.getMessage());
-        }
-    }
-
     private ObjectNode error(String code, String message) {
         ObjectNode error = JsonUtils.MAPPER.createObjectNode();
         error.put("success", false);

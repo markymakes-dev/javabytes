@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.file;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -24,6 +25,20 @@ public class EnvironmentVariablesTool implements Tool {
 
     @Override
     public String getName() { return "environment_variables"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "environment_variables",
+                "Environment Variables",
+                "List, read or explain environment variables. Secret-like values are masked.",
+                "files",
+                true,
+                true,
+                false,
+                true,
+                true);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

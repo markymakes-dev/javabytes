@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.system;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -13,6 +14,20 @@ public class ConvertTimeTool implements Tool {
 
     @Override
     public String getName() { return "convert_time"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "convert_time",
+                "Convert Time",
+                "Convert a timestamp between time zones or between epoch and ISO-8601 formats.",
+                "system",
+                true,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {

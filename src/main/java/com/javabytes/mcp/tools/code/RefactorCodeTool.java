@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.code;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
+import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
@@ -10,6 +11,20 @@ public class RefactorCodeTool implements Tool {
 
     @Override
     public String getName() { return "refactor_code"; }
+
+    @Override
+    public ToolSpec spec() {
+        return new ToolSpec(
+                "refactor_code",
+                "Refactor Java Code",
+                "Refactor Java source for readability, naming and structure while preserving behaviour.",
+                "codegen",
+                false,
+                true,
+                false,
+                true,
+                false);
+    }
 
     @Override
     public JsonNode execute(JsonNode params) {
