@@ -2,17 +2,17 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.markymakes-dev/javabytes",
   "title": "JavaBytes",
-  "description": "71 Java-focused tools for files, MySQL, JavaFX, Spring Boot and JS-to-Java migration, over stdio.",
+  "description": "74 Java-focused tools for files, MySQL, JavaFX, Spring Boot and JS-to-Java migration, over stdio.",
   "repository": {
     "url": "https://github.com/markymakes-dev/javabytes",
     "source": "github"
   },
-  "version": "1.0.1",
+  "version": "1.1.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "javabytes-mcp",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "transport": {
         "type": "stdio"
       },

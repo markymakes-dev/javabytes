@@ -1,6 +1,6 @@
 {
   "name": "javabytes-mcp",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "mcpName": "io.github.markymakes-dev/javabytes",
   "description": "JavaBytes MCP server: filesystem, MySQL analysis, JavaFX, Spring Boot and JavaScript migration tools over stdio.",
   "license": "MIT",
