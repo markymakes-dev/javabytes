@@ -18,8 +18,8 @@ Single-context repo (this one):
 /
 ├── GLOSSARY.md
 ├── docs/adr/
-│   ├── 0001-hand-rolled-json-rpc.md
-│   └── 0002-opt-in-tool-categories.md
+│   ├── 0003-schema-export-is-faithful.md
+│   └── 0004-keep-frontend-is-the-default-ui-strategy.md
 └── src/
 ```
 
@@ -44,16 +44,23 @@ When your output names a domain concept (in an issue title, a refactor proposal,
 
 If the concept you need isn't in the glossary yet, that's a signal: either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
 
-## Vocabulary hazard: "skill"
+## Vocabulary hazard: "tool" vs "agent skill"
 
-This repo uses **skill** for a Java class that implements one MCP tool
-(`src/main/java/com/javabytes/mcp/skills/**`, e.g. `AnalyzeSchemaNormalizationSkill`).
-Agent skills (`SKILL.md` documents under `skills/`) are a different thing. When
-either sense is ambiguous in output, say "tool implementation" or "agent skill"
-instead of "skill".
+This repo uses **tool** for a Java class that implements one MCP tool
+(`src/main/java/com/javabytes/mcp/tools/**`, e.g. `AnalyzeSchemaNormalizationTool`).
+Agent skills (`SKILL.md` documents under `skills/`) are a different thing —
+those are agent-facing workflow documents, not code. When either sense is
+ambiguous in output, say "tool implementation" or "agent skill" instead of "skill".
 
-## Flag ADR conflicts
+## Before changing behavior, read these
 
-If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
+- **`GLOSSARY.md`** at the repo root — use its vocabulary; don't drift to synonyms it explicitly avoids.
+- **`docs/adr/`** — read ADRs that touch the area you're about to work in, and **flag any contradiction** explicitly rather than silently overriding:
 
-> _Contradicts ADR-0007 (event-sourced orders), but worth reopening because…_
+> _Contradicts ADR-0004 (keep-frontend as default UI strategy), but worth reopening because…_
+
+If the concept you need isn't in the glossary yet, either you're inventing language the project doesn't use (reconsider) or there's a real gap — note it for `/domain-modeling`.
+
+## .scratch/ convention
+
+Exploration debris (throwaway prototypes, scratch queries, one-off scripts) lives in `.scratch/` at the repo root — never committed, never pushed. `.scratch/` is gitignored.

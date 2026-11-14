@@ -28,6 +28,7 @@ Thumbs.db
 *.log
 temp/
 tmp/
+.scratch/
 
 # Application-specific
 *.db
