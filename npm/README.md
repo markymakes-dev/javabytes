@@ -19,6 +19,22 @@ npx -y javabytes-mcp
 The process reads MCP messages on stdin and writes only protocol messages to
 stdout. Logs go to stderr.
 
+## CLI subcommands
+
+With no arguments the launcher starts the MCP server — that is what MCP
+clients run. Two subcommands help with setup:
+
+```bash
+javabytes version   # package version and bundled jar status
+javabytes doctor    # check Java, jar, database config and updates
+```
+
+`doctor` prints one PASS/WARN/FAIL line per check (an unset
+`JAVABYTES_DB_URL` is informational, not a problem), then a summary line.
+It exits 0 when no problems were found and 1 otherwise. The update check
+talks to the npm registry with a 3-second timeout and is skipped silently
+when offline.
+
 ## Agent configuration
 
 ```json
