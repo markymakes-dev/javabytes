@@ -16,7 +16,7 @@ class ToolMetadataTest {
 
     @Test
     void catalogCoversEveryRegisteredTool() {
-        assertEquals(72, ToolMetadata.catalog().size());
+        assertEquals(73, ToolMetadata.catalog().size());
     }
 
     @Test
@@ -43,7 +43,7 @@ class ToolMetadataTest {
                 enabled.add(entry.getKey());
             }
         }
-        assertEquals(42, enabled.size());
+        assertEquals(43, enabled.size());
         assertTrue(enabled.contains("read_text_file"));
         assertTrue(enabled.contains("query_database"));
         assertTrue(enabled.contains("analyze_schema_normalization"));

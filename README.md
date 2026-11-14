@@ -121,8 +121,8 @@ Tools are grouped, and a group can be toggled without touching code:
 | `diagnostics` | on | evidence-based project diagnostics |
 | `ui`, `design`, `codegen`, `springboot` | **off** | template generators |
 
-A fresh server exposes **41 capability tools**; the **30 template generators** are opt-in
-(`JAVABYTES_ENABLE=all` exposes all 71).
+A fresh server exposes **42 capability tools**; the **30 template generators** are opt-in
+(`JAVABYTES_ENABLE=all` exposes all 72).
 
 Enable or disable by group or by individual tool name:
 
@@ -169,6 +169,7 @@ cannot expose the whole disk.
 | `project_diagnostic` | Evidence-based dependency/configuration check |
 | `analyze_springboot_project` | Spring Boot layout inspection |
 | `extract_data_models` | Parse mongoose/prisma/sequelize/SQL/JSON data declarations into tables and columns, with per-field confidence and an honest limitations list |
+| `models_to_schema` | Convert parsed schema models into normalized schema proposals: proposed DDL, pass-through verdicts, and a verification list of medium/low-confidence fields |
 | `fix_javafx_headless` | Adds the Monocle property (dry run by default; `apply=true` to write) |
 | `create_mysql_client` | Generates a self-contained JDBC helper that reads credentials from env |
 | `get_system_info` | JVM/OS/hardware info |

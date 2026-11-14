@@ -104,6 +104,7 @@ public class McpServerMain {
         registerTool(registry, new ExportSchemaDdlTool());
         registerTool(registry, new AnalyzeSchemaNormalizationTool());
         registerTool(registry, new ExtractDataModelsTool());
+        registerTool(registry, new ModelsToSchemaTool());
 
         // System tools (4)
         registerTool(registry, new GetSystemInfoTool());
