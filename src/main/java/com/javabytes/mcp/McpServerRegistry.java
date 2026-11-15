@@ -1,6 +1,7 @@
 package com.javabytes.mcp;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.tools.Tool;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
@@ -27,10 +28,27 @@ public class McpServerRegistry {
             return ErrorHelper.error("SKILL_NOT_FOUND", "Tool '" + toolName + "' not registered");
         }
         try {
-            return tool.execute(params);
+            JsonNode toolResult = tool.execute(params);
+            // Tool returns JsonNode (wire format); ensure it has success field
+            return normalizeResult(toolResult);
         } catch (Exception e) {
-            return ErrorHelper.error("SKILL_EXECUTION_ERROR", "Error executing '" + toolName + "': " + e.getMessage());
+            return ErrorHelper.error("SKILL_EXECUTION_ERROR",
+                    "Error executing '" + toolName + "': " + e.getMessage());
         }
+    }
+
+    private JsonNode normalizeResult(JsonNode result) {
+        // If it's already the wire format (has "success" field), pass through
+        if (result != null && result.has("success")) {
+            return result;
+        }
+        // Otherwise wrap as success
+        ObjectNode wrapper = JsonUtils.MAPPER.createObjectNode();
+        wrapper.put("success", true);
+        if (result != null) {
+            wrapper.set("data", result);
+        }
+        return wrapper;
     }
 
     public List<String> listTools() {

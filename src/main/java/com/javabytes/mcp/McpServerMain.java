@@ -341,20 +341,17 @@ public class McpServerMain {
                             writeResponse(-32602, unknownToolMessage(toolName), id, System.out);
                             continue;
                         }
-                        try {
-                            JsonNode toolResult = registry.execute(toolName, args);
-                            ObjectNode result = JsonUtils.MAPPER.createObjectNode();
-                            ArrayNode content = JsonUtils.MAPPER.createArrayNode();
-                            ObjectNode text = JsonUtils.MAPPER.createObjectNode();
-                            text.put("type", "text");
-                            text.put("text", JsonUtils.MAPPER.writeValueAsString(toolResult));
-                            content.add(text);
-                            result.set("content", content);
-                            result.put("isError", toolResult.has("success") && !toolResult.get("success").asBoolean());
-                            writeResult(result, id, System.out);
-                        } catch (Exception e) {
-                            writeResponse(-32603, "Tool execution failed: " + e.getMessage(), id, System.out);
-                        }
+                        JsonNode toolResult = registry.execute(toolName, args);
+                        ObjectNode result = JsonUtils.MAPPER.createObjectNode();
+                        ArrayNode content = JsonUtils.MAPPER.createArrayNode();
+                        ObjectNode text = JsonUtils.MAPPER.createObjectNode();
+                        text.put("type", "text");
+                        text.put("text", JsonUtils.MAPPER.writeValueAsString(toolResult));
+                        content.add(text);
+                        result.set("content", content);
+                        // isError derived from the wire envelope's success field (ADR 0008)
+                        result.put("isError", toolResult.has("success") && !toolResult.get("success").asBoolean());
+                        writeResult(result, id, System.out);
                     }
                     default -> {
                         if (!isNotification) {

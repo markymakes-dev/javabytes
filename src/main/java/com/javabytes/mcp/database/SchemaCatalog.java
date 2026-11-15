@@ -41,20 +41,24 @@ public final class SchemaCatalog {
         return "'" + identifier + "'";
     }
 
-    /** Extract the rows array from a {@link MyDatabaseClient} result or throw. */
-    public static ArrayNode rows(JsonNode result) {
+    /**
+     * Extract the rows array from a {@link MyDatabaseClient} result.
+     *
+     * @throws CatalogException when the result is null or indicates failure
+     */
+    public static ArrayNode rows(JsonNode result) throws CatalogException {
         if (result == null) {
-            throw new IllegalStateException("Database returned no result");
+            throw new CatalogException("Database returned no result");
         }
         if (!result.path("success").asBoolean(false)) {
-            throw new IllegalStateException(result.path("message").asText("Database query failed"));
+            throw new CatalogException(result.path("message").asText("Database query failed"));
         }
         JsonNode rows = result.get("rows");
         return rows instanceof ArrayNode array ? array : JsonUtils.MAPPER.createArrayNode();
     }
 
     /** Current schema name, or null when the connection has no default schema. */
-    public static String currentDatabase(MyDatabaseClient db) {
+    public static String currentDatabase(MyDatabaseClient db) throws CatalogException {
         JsonNode result = db.query("SELECT DATABASE() AS db");
         ArrayNode rows = rows(result);
         if (rows.isEmpty()) {
@@ -65,7 +69,7 @@ public final class SchemaCatalog {
     }
 
     /** Base tables in the current schema, in name order. */
-    public static List<String> tableNames(MyDatabaseClient db) {
+    public static List<String> tableNames(MyDatabaseClient db) throws CatalogException {
         JsonNode result = db.query(
                 "SELECT TABLE_NAME AS name FROM information_schema.TABLES "
                         + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' "
@@ -84,5 +88,15 @@ public final class SchemaCatalog {
 
     public static boolean bool(JsonNode row, String field) {
         return row.path(field).asBoolean(false);
+    }
+
+    /**
+     * Exception thrown when a catalog operation fails. The message is preserved
+     * and mapped to the {@link ErrorHelper#DB_ERROR} code by the outcome layer.
+     */
+    public static final class CatalogException extends RuntimeException {
+        public CatalogException(String message) {
+            super(message);
+        }
     }
 }
