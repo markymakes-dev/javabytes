@@ -95,6 +95,8 @@ public class TranslateWebappTool implements Tool {
                 ? params.get("package_name").asText("com.example").trim()
                 : "com.example";
         String writeTo = params.has("write_to") ? params.get("write_to").asText().trim() : "";
+        String reportPath = params.has("report_path") ? params.get("report_path").asText().trim() : "";
+        boolean scanOnly = params.has("scan_only") && params.get("scan_only").asBoolean(false);
         int maxFiles = params.has("max_files") ? params.get("max_files").asInt(500) : 500;
         String entitiesJson = params.has("entities") && !params.get("entities").isNull()
                 ? params.get("entities").asText()
@@ -134,6 +136,26 @@ public class TranslateWebappTool implements Tool {
 
             String plan = migrationPlan(root, analysis, target, packageName);
 
+            // Scan-only mode: emit inventory report without generating project
+            if (scanOnly) {
+                ObjectNode scanOut = JsonUtils.MAPPER.createObjectNode();
+                scanOut.put("success", true);
+                scanOut.put("scan_only", true);
+                scanOut.set("analysis", analysis);
+                scanOut.put("migration_plan", plan);
+                if (!reportPath.isEmpty()) {
+                    Path reportDest = Path.of(reportPath);
+                    if (!PathValidator.isAllowed(reportDest)) {
+                        return ErrorHelper.error("PATH_NOT_ALLOWED",
+                                "report_path is outside the sandbox: " + reportPath);
+                    }
+                    Files.createDirectories(reportDest.getParent());
+                    Files.writeString(reportDest, plan);
+                    scanOut.put("report_written", reportDest.toAbsolutePath().toString());
+                }
+                return scanOut;
+            }
+
             // Complete per-target file map: paths -> contents.
             Map<String, String> fileMap = new LinkedHashMap<>();
             List<String> limitations = new ArrayList<>();
@@ -171,6 +193,23 @@ public class TranslateWebappTool implements Tool {
                 for (var entry : fileMap.entrySet()) {
                     write(destination.resolve(entry.getKey()), entry.getValue(), written);
                 }
+                if (fileMap.containsKey("mvnw")) {
+                    setExecutableIfPosix(destination.resolve("mvnw"));
+                }
+            }
+
+            // Write detailed translation report if report_path is provided
+            if (!reportPath.isEmpty()) {
+                Path reportDest = Path.of(reportPath);
+                if (!PathValidator.isAllowed(reportDest)) {
+                    return ErrorHelper.error("PATH_NOT_ALLOWED",
+                            "report_path is outside the sandbox: " + reportPath);
+                }
+                String report = buildTranslationReport(root, analysis, fileMap, limitations,
+                        target, packageName, entitiesJson, jdbcUrl, written);
+                Files.createDirectories(reportDest.getParent());
+                Files.writeString(reportDest, report);
+                out.put("report_written", reportDest.toAbsolutePath().toString());
             }
             return out;
         } catch (Exception e) {
@@ -680,6 +719,7 @@ public class TranslateWebappTool implements Tool {
 
         if (isSpringBoot) {
             String packagePath = packageName.replace('.', '/');
+            addMavenWrapper(fileMap, limitations);
             fileMap.put("pom.xml", springBootPom(packageName, vaadin, !entities.isEmpty()));
             fileMap.put("src/main/java/" + packagePath + "/Application.java",
                     springApplication(packageName));
@@ -713,12 +753,65 @@ public class TranslateWebappTool implements Tool {
                 fileMap.putIfAbsent("src/main/resources/static/.gitkeep", "");
             }
         } else if (isJavaFx) {
+            addMavenWrapper(fileMap, limitations);
             fileMap.put("pom.xml", javafxPom(packageName));
             fileMap.put("src/main/java/" + packageName.replace('.', '/') + "/App.java",
                     javafxApp(packageName));
             fileMap.put("README.md", readme(packageName, target, entities, jdbcUrl));
             limitations.add("JavaFX is a desktop platform, not a web technology: the generated "
                     + "App.java is a shell and the browser UI is not mechanically ported.");
+        }
+    }
+
+    /**
+     * Adds the Maven Wrapper (mvnw, mvnw.cmd, .mvn/wrapper/maven-wrapper.properties)
+     * so the generated project builds without a system Maven install. Scripts are the
+     * Apache-licensed maven-wrapper 3.3.2 distribution resources, embedded as
+     * classpath resources; the wrapper jar and Maven distribution are downloaded
+     * on first run, so no binary is checked in or embedded here.
+     */
+    private static void addMavenWrapper(Map<String, String> fileMap, List<String> limitations) {
+        String properties = classpathResource("/maven-wrapper/maven-wrapper.properties");
+        String shell = classpathResource("/maven-wrapper/mvnw");
+        String batch = classpathResource("/maven-wrapper/mvnw.cmd");
+        if (properties == null || shell == null || batch == null) {
+            limitations.add("Maven wrapper resources missing from the server jar; the generated "
+                    + "project needs a system Maven or 'mvn wrapper:wrapper' to build.");
+            return;
+        }
+        fileMap.put(".mvn/wrapper/maven-wrapper.properties", properties);
+        fileMap.put("mvnw", shell);
+        // cmd.exe reliably handles CRLF batch files; the resource ships LF.
+        fileMap.put("mvnw.cmd", batch.replace("\r\n", "\n").replace("\n", "\r\n"));
+    }
+
+    private static String classpathResource(String path) {
+        try (java.io.InputStream in = TranslateWebappTool.class.getResourceAsStream(path)) {
+            if (in == null) {
+                return null;
+            }
+            return new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    /** Best effort: mark mvnw executable on POSIX filesystems (no-op on Windows). */
+    private static void setExecutableIfPosix(Path file) {
+        try {
+            java.nio.file.attribute.PosixFileAttributeView view = Files.getFileAttributeView(
+                    file, java.nio.file.attribute.PosixFileAttributeView.class);
+            if (view == null) {
+                return;
+            }
+            Set<java.nio.file.attribute.PosixFilePermission> perms =
+                    Files.getPosixFilePermissions(file);
+            perms.add(java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE);
+            perms.add(java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE);
+            perms.add(java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE);
+            Files.setPosixFilePermissions(file, perms);
+        } catch (IOException | UnsupportedOperationException ignored) {
+            // Non-POSIX filesystem (e.g. Windows): the mvnw.cmd batch file covers it.
         }
     }
 
@@ -1145,6 +1238,103 @@ public class TranslateWebappTool implements Tool {
         }
     }
 
+    /**
+     * Build a detailed translation report with per-file/function counts and manual-work reasons.
+     */
+    private static String buildTranslationReport(Path root, ObjectNode analysis,
+                                                 Map<String, String> fileMap,
+                                                 List<String> limitations,
+                                                 String target, String packageName,
+                                                 String entitiesJson, String jdbcUrl,
+                                                 ArrayNode written) {
+        StringBuilder md = new StringBuilder();
+        md.append("# Translation Report\n\n");
+        md.append("Source: `").append(root.toAbsolutePath()).append("`\n\n");
+        md.append("Target: **").append(target).append("**\n\n");
+        md.append("Package: `").append(packageName).append("`\n\n");
+        md.append("Generated: ").append(java.time.Instant.now().toString()).append("\n\n");
+
+        md.append("## Summary\n\n");
+        md.append("| Metric | Value |\n|---|---|\n");
+        md.append("| Files analyzed | ").append(analysis.path("files_analyzed").asInt()).append(" |\n");
+        md.append("| Lines analyzed | ").append(analysis.path("total_lines").asInt()).append(" |\n");
+        md.append("| Scaffold files generated | ").append(fileMap.size()).append(" |\n");
+        md.append("| Files written to disk | ").append(written.size()).append(" |\n");
+        md.append("| Limitations | ").append(limitations.size()).append(" |\n\n");
+
+        md.append("## Scaffold Files Generated\n\n");
+        md.append("| Path | Size (chars) |\n|---|---|\n");
+        for (var entry : fileMap.entrySet()) {
+            md.append("| `").append(entry.getKey()).append("` | ")
+                    .append(entry.getValue().length()).append(" |\n");
+        }
+        md.append('\n');
+
+        if (!limitations.isEmpty()) {
+            md.append("## Limitations / Manual Work Required\n\n");
+            for (String lim : limitations) {
+                md.append("- ").append(lim).append('\n');
+            }
+            md.append('\n');
+        }
+
+        md.append("## Browser-Bound Files (Not Translated)\n\n");
+        JsonNode browserApis = analysis.path("browser_apis");
+        if (browserApis.isEmpty()) {
+            md.append("No browser APIs detected.\n\n");
+        } else {
+            md.append("| API | Occurrences | Files |\n|---|---|---|\n");
+            for (JsonNode api : browserApis) {
+                md.append("| ").append(api.path("name").asText())
+                        .append(" | ").append(api.path("count").asInt())
+                        .append(" | ").append(api.path("files").asText("-"))
+                        .append(" |\n");
+            }
+            md.append('\n');
+            md.append("> These files require manual redesign or the GraalJS/REST coexistence route.\n");
+            md.append("> See MIGRATION.md for options.\n\n");
+        }
+
+        md.append("## Data-Centric Generation\n\n");
+        if (entitiesJson != null && !entitiesJson.isBlank()) {
+            md.append("Entities payload provided: **yes**\n\n");
+            try {
+                JsonNode entities = JsonUtils.MAPPER.readTree(entitiesJson);
+                if (entities.isArray()) {
+                    md.append("| Entity | Table | Fields |\n|---|---|---|\n");
+                    for (JsonNode ent : entities) {
+                        md.append("| ").append(ent.path("name").asText())
+                                .append(" | ").append(ent.path("table").asText("-"))
+                                .append(" | ").append(ent.path("fields").size())
+                                .append(" |\n");
+                    }
+                    md.append('\n');
+                }
+            } catch (Exception e) {
+                md.append("Could not parse entities payload: ").append(e.getMessage()).append("\n\n");
+            }
+        } else {
+            md.append("Entities payload provided: **no** (route-based 501 stubs only)\n\n");
+        }
+
+        if (jdbcUrl != null && !jdbcUrl.isBlank()) {
+            md.append("JDBC URL provided: **yes** (will create schema via generate_database)\n\n");
+        } else {
+            md.append("JDBC URL provided: **no**\n\n");
+        }
+
+        md.append("## Written Files\n\n");
+        md.append("| Path |\n|---|\n");
+        for (JsonNode w : written) {
+            md.append("| `").append(w.asText()).append("` |\n");
+        }
+        md.append('\n');
+
+        md.append("---\n");
+        md.append("*Generated by JavaBytes translate_webapp tool*\n");
+        return md.toString();
+    }
+
     @Override
     public Tool.JsonSchema getInputSchema() {
         Tool.JsonSchema schema = new Tool.JsonSchema();
@@ -1164,6 +1354,10 @@ public class TranslateWebappTool implements Tool {
                 .description("Package for generated Java scaffolding (default com.example)"));
         schema.prop("write_to", new Tool.StringSchema()
                 .description("Optional directory inside the sandbox for MIGRATION.md and scaffold files"));
+        schema.prop("report_path", new Tool.StringSchema()
+                .description("Optional file path inside the sandbox for detailed translation report (TRANSLATION-REPORT.md)"));
+        schema.prop("scan_only", new Tool.BoolSchema()
+                .description("If true, only analyze and emit migration plan without generating scaffold (default false)"));
         schema.prop("max_files", new Tool.NumberSchema()
                 .integer()
                 .minimum(1)

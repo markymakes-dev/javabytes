@@ -93,7 +93,15 @@ public class TranslateJavaScriptTool implements Tool {
                 if (Files.isDirectory(target)) {
                     target = target.resolve(out.path("class_name").asText() + ".java");
                 } else if (!target.getFileName().toString().endsWith(".java")) {
-                    target = target.resolveSibling(target.getFileName() + ".java");
+                    // Fail closed: silently appending ".java" here made successive
+                    // per-unit calls to the same package directory overwrite one file
+                    // (e.g. write_to ".../core" for every unit -> "core.java").
+                    return ErrorHelper.error("INVALID_WRITE_TO",
+                            "write_to must be either an existing directory (the class is "
+                                    + "written as <class_name>.java inside it) or an explicit file "
+                                    + "path ending in .java. Got: " + writeTo
+                                    + " (not an existing directory). For per-unit translations pass "
+                                    + "an explicit path like " + writeTo + "/" + className + ".java");
                 }
                 if (target.getParent() != null) {
                     Files.createDirectories(target.getParent());
@@ -122,7 +130,7 @@ public class TranslateJavaScriptTool implements Tool {
         schema.prop("package_name", new Tool.StringSchema()
                 .description("Java package for the output (default com.example)"));
         schema.prop("write_to", new Tool.StringSchema()
-                .description("Optional .java file or directory inside the sandbox; omit to return text only"));
+                .description("Optional output: an existing directory (writes <class_name>.java inside) or an explicit path ending in .java. Ambiguous paths are rejected to prevent silent overwrites; omit to return text only"));
         return schema;
     }
 }

@@ -321,6 +321,77 @@ class TranslateWebappToolTest {
         assertTrue(hasLimitation, "expected a limitation when no static assets exist");
     }
 
+    @Test
+    void scanOnlyReturnsAnalysisAndPlanWithoutScaffold(@TempDir Path root) throws Exception {
+        writeProject(root);
+        ObjectNode params = params(root);
+        params.put("scan_only", true);
+        params.put("report_path", root.resolve("SCAN-REPORT.md").toString());
+
+        JsonNode result = new TranslateWebappTool().execute(params);
+
+        assertTrue(result.path("success").asBoolean(), result.toString());
+        assertTrue(result.path("scan_only").asBoolean());
+        assertTrue(result.path("analysis").isObject());
+        assertTrue(result.path("migration_plan").isTextual());
+        assertTrue(result.path("report_written").asText().endsWith("SCAN-REPORT.md"));
+        // No scaffold written
+        assertTrue(result.path("files").isMissingNode());
+    }
+
+    @Test
+    void reportPathWritesDetailedTranslationReport(@TempDir Path root) throws Exception {
+        writeProject(root);
+        ObjectNode params = params(root);
+        params.put("write_to", root.resolve("out").toString());
+        params.put("report_path", root.resolve("TRANSLATION-REPORT.md").toString());
+
+        JsonNode result = new TranslateWebappTool().execute(params);
+
+        assertTrue(result.path("success").asBoolean(), result.toString());
+        String reportWritten = result.path("report_written").asText();
+        Path report = root.resolve("TRANSLATION-REPORT.md");
+        assertTrue(reportWritten.contains("TRANSLATION-REPORT.md"),
+                "report_written was: " + reportWritten);
+        assertTrue(Files.isRegularFile(report));
+        String reportContent = Files.readString(report);
+        assertTrue(reportContent.contains("# Translation Report"));
+        assertTrue(reportContent.contains("## Summary"));
+        assertTrue(reportContent.contains("## Scaffold Files Generated"));
+        // "## Limitations" only appears when there are limitations (summary shows "Limitations | 0")
+        assertTrue(reportContent.contains("## Browser-Bound Files"));
+        assertTrue(reportContent.contains("## Data-Centric Generation"));
+        assertTrue(reportContent.contains("## Written Files"));
+        // Summary table should show counts correctly
+        assertTrue(reportContent.contains("Limitations | 0"));
+    }
+
+    @Test
+    void generatedScaffoldIncludesMavenWrapper(@TempDir Path root) throws Exception {
+        writeProject(root);
+        ObjectNode params = params(root);
+        params.put("target", "keep-frontend");
+        params.put("write_to", root.resolve("out").toString());
+
+        JsonNode result = new TranslateWebappTool().execute(params);
+        assertTrue(result.path("success").asBoolean(), result.toString());
+
+        Path out = root.resolve("out");
+        // Maven wrapper files
+        assertTrue(Files.isRegularFile(out.resolve("mvnw")), "mvnw should exist");
+        assertTrue(Files.isRegularFile(out.resolve("mvnw.cmd")), "mvnw.cmd should exist");
+        assertTrue(Files.isRegularFile(out.resolve(".mvn/wrapper/maven-wrapper.properties")),
+                "maven-wrapper.properties should exist");
+        String props = Files.readString(out.resolve(".mvn/wrapper/maven-wrapper.properties"));
+        assertTrue(props.contains("wrapperVersion=3.3.2"), "properties should have version 3.3.2");
+        // mvnw should have exec bit on POSIX (no-op test on Windows; content check)
+        String mvnw = Files.readString(out.resolve("mvnw"));
+        assertTrue(mvnw.contains("Apache Maven Wrapper startup batch script, version 3.3.2"));
+        // mvnw.cmd should have CRLF
+        String mvnwCmd = Files.readString(out.resolve("mvnw.cmd"));
+        assertTrue(mvnwCmd.contains("\r\n"), "mvnw.cmd should use CRLF line endings");
+    }
+
     private static ObjectNode params(Path root) {
         ObjectNode params = JsonUtils.MAPPER.createObjectNode();
         params.put("path", root.toString());
