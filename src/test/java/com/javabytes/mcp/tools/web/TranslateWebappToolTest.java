@@ -462,4 +462,67 @@ class TranslateWebappToolTest {
                 ]
                 """;
     }
+
+    @Test
+    void javafxWithEntitiesGeneratesCrudViewsAndHttpClient(@TempDir Path root) throws Exception {
+        writeProject(root);
+        ObjectNode params = params(root);
+        params.put("target", "javafx");
+        params.put("write_to", root.resolve("desktop").toString());
+        params.put("entities", entitiesJson());
+
+        JsonNode result = new TranslateWebappTool().execute(params);
+
+        assertTrue(result.path("success").asBoolean(), result.toString());
+        assertEquals("javafx", result.path("target").asText());
+
+        Path desktop = root.resolve("desktop");
+
+        // Core files
+        assertTrue(Files.isRegularFile(desktop.resolve("src/main/java/com/example/App.java")));
+        assertTrue(Files.isRegularFile(desktop.resolve("src/main/java/com/example/client/ApiClient.java")));
+        assertTrue(Files.isRegularFile(desktop.resolve("pom.xml")));
+
+        // Entity files
+        assertTrue(Files.isRegularFile(desktop.resolve("src/main/java/com/example/entity/User.java")));
+
+        // CRUD views
+        assertTrue(Files.isRegularFile(desktop.resolve("src/main/java/com/example/ui/UserListView.java")),
+                "UserListView should be generated");
+        assertTrue(Files.isRegularFile(desktop.resolve("src/main/java/com/example/ui/UserFormView.java")),
+                "UserFormView should be generated");
+
+        // Verify content of ApiClient
+        String apiClient = Files.readString(desktop.resolve("src/main/java/com/example/client/ApiClient.java"));
+        assertTrue(apiClient.contains("class ApiClient"));
+        assertTrue(apiClient.contains("HttpClient"));
+        assertTrue(apiClient.contains("ObjectMapper"));
+
+        // Verify UserListView has TableView and CRUD buttons
+        String listView = Files.readString(desktop.resolve("src/main/java/com/example/ui/UserListView.java"));
+        assertTrue(listView.contains("class UserListView"));
+        assertTrue(listView.contains("TableView<User>"));
+        assertTrue(listView.contains("Button refreshBtn"));
+        assertTrue(listView.contains("Button addBtn"));
+        assertTrue(listView.contains("Button editBtn"));
+        assertTrue(listView.contains("Button deleteBtn"));
+
+        // Verify UserFormView has form fields
+        String formView = Files.readString(desktop.resolve("src/main/java/com/example/ui/UserFormView.java"));
+        System.out.println("=== UserFormView content ===");
+        System.out.println(formView);
+        System.out.println("=== End UserFormView ===");
+        assertTrue(formView.contains("class UserFormView"));
+        assertTrue(formView.contains("TextField emailField"));
+        assertTrue(formView.contains("DatePicker createdAtField"));
+
+        // Verify pom.xml has javafx-fxml dependency
+        String pom = Files.readString(desktop.resolve("pom.xml"));
+        assertTrue(pom.contains("javafx-fxml"));
+
+        // Verify README mentions CRUD views
+        String readme = Files.readString(desktop.resolve("README.md"));
+        assertTrue(readme.contains("CRUD views"));
+        assertTrue(readme.contains("ApiClient"));
+    }
 }

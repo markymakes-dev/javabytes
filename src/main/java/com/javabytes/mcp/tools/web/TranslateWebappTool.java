@@ -434,6 +434,11 @@ public class TranslateWebappTool implements Tool {
                             <artifactId>javafx-controls</artifactId>
                             <version>${javafx.version}</version>
                         </dependency>
+                        <dependency>
+                            <groupId>org.openjfx</groupId>
+                            <artifactId>javafx-fxml</artifactId>
+                            <version>${javafx.version}</version>
+                        </dependency>
                     </dependencies>
                     <build>
                         <plugins>
@@ -518,6 +523,465 @@ public class TranslateWebappTool implements Tool {
                     }
                 }
                 """.formatted(packageName);
+    }
+
+    private static String javafxApiClient(String packageName) {
+        return """
+                package %s.client;
+
+                import java.io.IOException;
+                import java.net.URI;
+                import java.net.http.HttpClient;
+                import java.net.http.HttpRequest;
+                import java.net.http.HttpResponse;
+                import java.net.URLEncoder;
+                import java.nio.charset.StandardCharsets;
+                import java.util.List;
+                import java.util.Map;
+                import java.util.concurrent.CompletableFuture;
+                import com.fasterxml.jackson.databind.JsonNode;
+                import com.fasterxml.jackson.databind.ObjectMapper;
+
+                /**
+                 * HTTP client for communicating with the Spring Boot REST backend.
+                 * Uses Java's built-in HttpClient and Jackson for JSON serialization.
+                 */
+                public class ApiClient {
+
+                    private final HttpClient httpClient;
+                    private final ObjectMapper objectMapper;
+                    private final String baseUrl;
+
+                    public ApiClient(String baseUrl) {
+                        this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+                        this.httpClient = HttpClient.newHttpClient();
+                        this.objectMapper = new ObjectMapper();
+                    }
+
+                    public CompletableFuture<JsonNode> get(String path) {
+                        HttpRequest request = HttpRequest.newBuilder()
+                                .uri(URI.create(baseUrl + path))
+                                .header("Accept", "application/json")
+                                .GET()
+                                .build();
+                        return sendAsync(request);
+                    }
+
+                    public CompletableFuture<JsonNode> post(String path, Object body) {
+                        String json;
+                        try {
+                            json = objectMapper.writeValueAsString(body);
+                        } catch (Exception e) {
+                            return CompletableFuture.failedFuture(e);
+                        }
+                        HttpRequest request = HttpRequest.newBuilder()
+                                .uri(URI.create(baseUrl + path))
+                                .header("Content-Type", "application/json")
+                                .header("Accept", "application/json")
+                                .POST(HttpRequest.BodyPublishers.ofString(json))
+                                .build();
+                        return sendAsync(request);
+                    }
+
+                    public CompletableFuture<JsonNode> put(String path, Object body) {
+                        String json;
+                        try {
+                            json = objectMapper.writeValueAsString(body);
+                        } catch (Exception e) {
+                            return CompletableFuture.failedFuture(e);
+                        }
+                        HttpRequest request = HttpRequest.newBuilder()
+                                .uri(URI.create(baseUrl + path))
+                                .header("Content-Type", "application/json")
+                                .header("Accept", "application/json")
+                                .PUT(HttpRequest.BodyPublishers.ofString(json))
+                                .build();
+                        return sendAsync(request);
+                    }
+
+                    public CompletableFuture<Void> delete(String path) {
+                        HttpRequest request = HttpRequest.newBuilder()
+                                .uri(URI.create(baseUrl + path))
+                                .DELETE()
+                                .build();
+                        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.discarding())
+                                .thenApply(response -> {
+                                    if (response.statusCode() >= 400) {
+                                        throw new RuntimeException("DELETE failed: " + response.statusCode());
+                                    }
+                                    return null;
+                                });
+                    }
+
+                    private CompletableFuture<JsonNode> sendAsync(HttpRequest request) {
+                        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                                .thenApply(response -> {
+                                    if (response.statusCode() >= 400) {
+                                        throw new RuntimeException("HTTP " + response.statusCode() + ": " + response.body());
+                                    }
+                                    try {
+                                        return objectMapper.readTree(response.body());
+                                    } catch (IOException e) {
+                                        throw new RuntimeException("Failed to parse JSON response", e);
+                                    }
+                                });
+                    }
+
+                    public static String encodeQueryParam(String value) {
+                        return URLEncoder.encode(value, StandardCharsets.UTF_8);
+                    }
+                }
+                """.formatted(packageName);
+    }
+
+    private static String javafxEntityListView(String packageName, EntityDef entity) {
+        String className = entityClassName(entity);
+        String variableName = Character.toLowerCase(className.charAt(0)) + className.substring(1);
+        String plural = variableName + "s";
+        String listViewClass = className + "ListView";
+        String formViewClass = className + "FormView";
+
+        FieldDef idField = pickId(entity);
+        String idType = idField != null ? javaTypeFor(idField.type()) : "Long";
+        String idMember = idField != null ? memberName(idField.name()) : "id";
+
+        // Build column definitions for the TableView
+        StringBuilder columns = new StringBuilder();
+        for (FieldDef f : entity.fields()) {
+            if (idField != null && f.name().equals(idField.name())) continue;
+            String javaType = javaTypeFor(f.type());
+            String member = memberName(f.name());
+            String columnName = f.column();
+            columns.append("        TableColumn<").append(className).append(", ").append(javaType)
+                    .append("> ").append(member).append("Col = new TableColumn<>(\"").append(columnName).append("\");\n");
+            columns.append("        ").append(member).append("Col.setCellValueFactory(data -> \n");
+            if (javaType.equals("String")) {
+                columns.append("            new javafx.beans.property.SimpleStringProperty(data.getValue().get").append(capitalize(member)).append("())\n");
+            } else if (javaType.equals("Integer") || javaType.equals("Long") || javaType.equals("Double") || javaType.equals("Float")) {
+                columns.append("            new javafx.beans.property.SimpleObjectProperty<>(data.getValue().get").append(capitalize(member)).append("())\n");
+            } else if (javaType.equals("Boolean")) {
+                columns.append("            new javafx.beans.property.SimpleObjectProperty<>(data.getValue().get").append(capitalize(member)).append("())\n");
+            } else {
+                columns.append("            new javafx.beans.property.SimpleObjectProperty<>(data.getValue().get").append(capitalize(member)).append("())\n");
+            }
+            columns.append("        );\n");
+            columns.append("        table.getColumns().add(").append(member).append("Col);\n\n");
+        }
+
+        return """
+                package %s.ui;
+
+                import %s.entity.%s;
+                import %s.client.ApiClient;
+                import javafx.collections.FXCollections;
+                import javafx.collections.ObservableList;
+                import javafx.geometry.Insets;
+                import javafx.scene.control.*;
+                import javafx.scene.layout.BorderPane;
+                import javafx.scene.layout.HBox;
+                import javafx.scene.layout.VBox;
+
+                import java.util.List;
+                import java.util.concurrent.CompletableFuture;
+
+                /**
+                 * List view for %s entities. Displays a table with CRUD actions.
+                 */
+                public class %s extends BorderPane {
+
+                    private final ApiClient apiClient;
+                    private final TableView<%s> table = new TableView<>();
+                    private final ObservableList<%s> items = FXCollections.observableArrayList();
+                    private final Button refreshBtn = new Button("Refresh");
+                    private final Button addBtn = new Button("Add %s");
+                    private final Button editBtn = new Button("Edit");
+                    private final Button deleteBtn = new Button("Delete");
+
+                    public %s(ApiClient apiClient) {
+                        this.apiClient = apiClient;
+                        initializeUI();
+                        loadData();
+                    }
+
+                    private void initializeUI() {
+                        // Toolbar
+                        HBox toolbar = new HBox(10, refreshBtn, addBtn, editBtn, deleteBtn);
+                        toolbar.setPadding(new Insets(10));
+                        setTop(toolbar);
+
+                        // Table
+                        table.setItems(items);
+                        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+                        // ID column
+                        TableColumn<%s, %s> idCol = new TableColumn<>("ID");
+                        idCol.setCellValueFactory(data -> new javafx.beans.property.SimpleObjectProperty<>(data.getValue().get%s()));
+                        table.getColumns().add(idCol);
+
+%s
+                        // Selection listener for edit/delete buttons
+                        table.getSelectionModel().selectedItemProperty().addListener((obs, old, sel) -> {
+                            boolean hasSelection = sel != null;
+                            editBtn.setDisable(!hasSelection);
+                            deleteBtn.setDisable(!hasSelection);
+                        });
+
+                        // Action handlers
+                        refreshBtn.setOnAction(e -> loadData());
+                        addBtn.setOnAction(e -> openForm(null));
+                        editBtn.setOnAction(e -> {
+                            %s selected = table.getSelectionModel().getSelectedItem();
+                            if (selected != null) openForm(selected);
+                        });
+                        deleteBtn.setOnAction(e -> {
+                            %s selected = table.getSelectionModel().getSelectedItem();
+                            if (selected != null) deleteItem(selected);
+                        });
+
+                        // Double-click to edit
+                        table.setOnMouseClicked(event -> {
+                            if (event.getClickCount() == 2) {
+                                %s selected = table.getSelectionModel().getSelectedItem();
+                                if (selected != null) openForm(selected);
+                            }
+                        });
+
+                        setCenter(table);
+                        editBtn.setDisable(true);
+                        deleteBtn.setDisable(true);
+                    }
+
+                    private void loadData() {
+                        apiClient.get("/api/%s")
+                                .thenAccept(json -> {
+                                    if (json.isArray()) {
+                                        items.clear();
+                                        for (JsonNode node : json) {
+                                            items.add(objectMapper.convertValue(node, %s.class));
+                                        }
+                                    }
+                                })
+                                .exceptionally(ex -> {
+                                    javafx.application.Platform.runLater(() ->
+                                            new Alert(Alert.AlertType.ERROR, "Failed to load: " + ex.getMessage()).showAndWait()
+                                    );
+                                    return null;
+                                });
+                    }
+
+                    private void openForm(%s item) {
+                        %s form = new %s(apiClient, item, this::loadData);
+                        // In a real app, this would open in a dialog or new scene
+                        // For scaffold, we just print to console
+                        System.out.println("Opening form for " + (item == null ? "new" : "edit") + " %s");
+                    }
+
+                    private void deleteItem(%s item) {
+                        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                                "Delete %s with ID " + item.get%s() + "?",
+                                ButtonType.YES, ButtonType.NO);
+                        confirm.showAndWait().ifPresent(response -> {
+                            if (response == ButtonType.YES) {
+                                apiClient.delete("/api/%s/" + item.get%s())
+                                        .thenRun(this::loadData)
+                                        .exceptionally(ex -> {
+                                            javafx.application.Platform.runLater(() ->
+                                                    new Alert(Alert.AlertType.ERROR, "Delete failed: " + ex.getMessage()).showAndWait()
+                                            );
+                                            return null;
+                                        });
+                            }
+                        });
+                    }
+                }
+                """.formatted(
+                        packageName,
+                        packageName, className,
+                        packageName,
+                        className,
+                        listViewClass,
+                        className, className, className,
+                        className, className, className, idType, capitalize(idMember),
+                        columns.toString(),
+                        className, className, formViewClass, formViewClass, className, className,
+                        plural.toLowerCase(),
+                        className,
+                        className, idType, capitalize(idMember),
+                        plural.toLowerCase(), idType, capitalize(idMember)
+                );
+    }
+
+    private static String javafxEntityFormView(String packageName, EntityDef entity) {
+        String className = entityClassName(entity);
+        String formViewClass = className + "FormView";
+        String plural = className.toLowerCase() + "s";
+
+        FieldDef idField = pickId(entity);
+        String idType = idField != null ? javaTypeFor(idField.type()) : "Long";
+        String idMember = idField != null ? memberName(idField.name()) : "id";
+
+        // Build form fields with proper GridPane layout
+        StringBuilder formContent = new StringBuilder();
+        StringBuilder fieldBindings = new StringBuilder();
+
+        int row = 0;
+        for (FieldDef f : entity.fields()) {
+            if (idField != null && f.name().equals(idField.name())) continue;
+            String javaType = javaTypeFor(f.type());
+            String member = memberName(f.name());
+            String columnName = f.column();
+            String capitalized = capitalize(member);
+
+            // Add label and field to GridPane
+            formContent.append("        form.add(new Label(\"").append(columnName).append("\"), 0, ").append(row).append(");\n");
+
+            // Form field declaration
+            if (javaType.equals("String")) {
+                formContent.append("        TextField ").append(member).append("Field = new TextField();\n");
+                formContent.append("        ").append(member).append("Field.setPromptText(\"").append(columnName).append("\");\n");
+                formContent.append("        form.add(").append(member).append("Field, 1, ").append(row).append(");\n\n");
+            } else if (javaType.equals("Integer") || javaType.equals("Long")) {
+                formContent.append("        TextField ").append(member).append("Field = new TextField();\n");
+                formContent.append("        ").append(member).append("Field.setPromptText(\"").append(columnName).append(" (number)\");\n");
+                formContent.append("        form.add(").append(member).append("Field, 1, ").append(row).append(");\n\n");
+            } else if (javaType.equals("Double") || javaType.equals("Float")) {
+                formContent.append("        TextField ").append(member).append("Field = new TextField();\n");
+                formContent.append("        ").append(member).append("Field.setPromptText(\"").append(columnName).append(" (decimal)\");\n");
+                formContent.append("        form.add(").append(member).append("Field, 1, ").append(row).append(");\n\n");
+            } else if (javaType.equals("Boolean")) {
+                formContent.append("        CheckBox ").append(member).append("Field = new CheckBox(\"").append(columnName).append("\");\n");
+                formContent.append("        form.add(").append(member).append("Field, 1, ").append(row).append(");\n\n");
+            } else if (javaType.equals("java.time.LocalDate") || javaType.equals("LocalDate")) {
+                formContent.append("        DatePicker ").append(member).append("Field = new DatePicker();\n");
+                formContent.append("        form.add(").append(member).append("Field, 1, ").append(row).append(");\n\n");
+            } else if (javaType.equals("java.time.LocalDateTime") || javaType.equals("LocalDateTime")) {
+                formContent.append("        DatePicker ").append(member).append("Field = new DatePicker();\n");
+                formContent.append("        form.add(").append(member).append("Field, 1, ").append(row).append(");\n\n");
+            } else {
+                formContent.append("        TextField ").append(member).append("Field = new TextField();\n");
+                formContent.append("        ").append(member).append("Field.setPromptText(\"").append(columnName).append("\");\n");
+                formContent.append("        form.add(").append(member).append("Field, 1, ").append(row).append(");\n\n");
+            }
+
+            // Field binding for entity creation
+            fieldBindings.append("        toSave.set").append(capitalized).append("(");
+            if (javaType.equals("String")) {
+                fieldBindings.append(member).append("Field.getText()");
+            } else if (javaType.equals("Integer")) {
+                fieldBindings.append("Integer.parseInt(").append(member).append("Field.getText())");
+            } else if (javaType.equals("Long")) {
+                fieldBindings.append("Long.parseLong(").append(member).append("Field.getText())");
+            } else if (javaType.equals("Double")) {
+                fieldBindings.append("Double.parseDouble(").append(member).append("Field.getText())");
+            } else if (javaType.equals("Float")) {
+                fieldBindings.append("Float.parseFloat(").append(member).append("Field.getText())");
+            } else if (javaType.equals("Boolean")) {
+                fieldBindings.append(member).append("Field.isSelected()");
+            } else if (javaType.equals("java.time.LocalDate") || javaType.equals("LocalDate")) {
+                fieldBindings.append(member).append("Field.getValue()");
+            } else if (javaType.equals("java.time.LocalDateTime") || javaType.equals("LocalDateTime")) {
+                fieldBindings.append(member).append("Field.getValue().atStartOfDay()");
+            } else {
+                fieldBindings.append(member).append("Field.getText()");
+            }
+            fieldBindings.append(");\n");
+
+            row++;
+        }
+
+        return """
+                package %s.ui;
+
+                import %s.entity.%s;
+                import %s.client.ApiClient;
+                import javafx.geometry.Insets;
+                import javafx.scene.control.*;
+                import javafx.scene.layout.GridPane;
+                import javafx.scene.layout.VBox;
+
+                import java.util.function.Runnable;
+
+                /**
+                 * Create/Edit form for %s entities.
+                 */
+                public class %s extends VBox {
+
+                    private final ApiClient apiClient;
+                    private final %s entity;
+                    private final boolean isNew;
+                    private final Runnable onSaved;
+
+                    public %s(ApiClient apiClient, %s entity, Runnable onSaved) {
+                        this.apiClient = apiClient;
+                        this.entity = entity;
+                        this.isNew = entity == null;
+                        this.onSaved = onSaved;
+
+                        setSpacing(10);
+                        setPadding(new Insets(20));
+
+                        Label title = new Label(isNew ? "Create %s" : "Edit %s");
+                        title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+                        getChildren().add(title);
+
+                        GridPane form = new GridPane();
+                        form.setHgap(10);
+                        form.setVgap(10);
+                        form.setPadding(new Insets(10));
+
+%s
+                        getChildren().add(form);
+
+                        Button saveBtn = new Button("Save");
+                        saveBtn.setDefaultButton(true);
+                        saveBtn.setOnAction(e -> save());
+                        getChildren().add(saveBtn);
+                    }
+
+                    private void save() {
+                        %s toSave = isNew ? new %s() : entity;
+%s
+                        if (isNew) {
+                            apiClient.post("/api/%s", toSave)
+                                    .thenRun(() -> {
+                                        if (onSaved != null) onSaved.run();
+                                    })
+                                    .exceptionally(ex -> {
+                                        javafx.application.Platform.runLater(() ->
+                                                new Alert(Alert.AlertType.ERROR, "Create failed: " + ex.getMessage()).showAndWait()
+                                        );
+                                        return null;
+                                    });
+                        } else {
+                            apiClient.put("/api/%s/" + toSave.get%s(), toSave)
+                                    .thenRun(() -> {
+                                        if (onSaved != null) onSaved.run();
+                                    })
+                                    .exceptionally(ex -> {
+                                        javafx.application.Platform.runLater(() ->
+                                                new Alert(Alert.AlertType.ERROR, "Update failed: " + ex.getMessage()).showAndWait()
+                                        );
+                                        return null;
+                                    });
+                        }
+                    }
+                }
+                """.formatted(
+                        packageName,
+                        packageName, className,
+                        packageName,
+                        className,
+                        formViewClass,
+                        className,
+                        formViewClass, className, className,
+                        className,
+                        formContent.toString(),
+                        className,
+                        className,
+                        fieldBindings.toString(),
+                        plural.toLowerCase(),  // for POST /api/%s
+                        plural.toLowerCase(), capitalize(idMember)  // for PUT /api/%s/ + toSave.get%s()
+                );
     }
 
     private static String apiController(String packageName, JsonNode routes) {
@@ -755,11 +1219,29 @@ public class TranslateWebappTool implements Tool {
         } else if (isJavaFx) {
             addMavenWrapper(fileMap, limitations);
             fileMap.put("pom.xml", javafxPom(packageName));
-            fileMap.put("src/main/java/" + packageName.replace('.', '/') + "/App.java",
+            String packagePath = packageName.replace('.', '/');
+            fileMap.put("src/main/java/" + packagePath + "/App.java",
                     javafxApp(packageName));
+            fileMap.put("src/main/java/" + packagePath + "/client/ApiClient.java",
+                    javafxApiClient(packageName));
             fileMap.put("README.md", readme(packageName, target, entities, jdbcUrl));
             limitations.add("JavaFX is a desktop platform, not a web technology: the generated "
                     + "App.java is a shell and the browser UI is not mechanically ported.");
+
+            if (!entities.isEmpty()) {
+                // Generate entity views and forms
+                for (EntityDef ent : entities) {
+                    String cls = entityClassName(ent);
+                    fileMap.put("src/main/java/" + packagePath + "/entity/" + cls + ".java",
+                            entityClass(ent, packageName));
+                    fileMap.put("src/main/java/" + packagePath + "/ui/" + cls + "ListView.java",
+                            javafxEntityListView(packageName, ent));
+                    fileMap.put("src/main/java/" + packagePath + "/ui/" + cls + "FormView.java",
+                            javafxEntityFormView(packageName, ent));
+                }
+                limitations.add("Generated per-entity CRUD views (ListView + FormView) and HTTP client (ApiClient). "
+                        + "Configure the backend URL in ApiClient constructor (default: http://localhost:8080).");
+            }
         }
     }
 
@@ -1163,7 +1645,12 @@ public class TranslateWebappTool implements Tool {
         sb.append("## Run\n\n");
         if (target.equals("javafx")) {
             sb.append("```bash\nmvn javafx:run\n```\n\n");
-            sb.append("JavaFX is a desktop platform; the generated App.java is a shell.\n\n");
+            if (!entities.isEmpty()) {
+                sb.append("Per-entity CRUD views (ListView + FormView) and HTTP client (ApiClient) were generated.\n");
+                sb.append("Configure the backend URL in ApiClient constructor (default: http://localhost:8080).\n\n");
+            } else {
+                sb.append("JavaFX is a desktop platform; the generated App.java is a shell.\n\n");
+            }
         } else {
             sb.append("```bash\nmvn spring-boot:run\n```\n\n");
             sb.append("The app starts on port 8080. ").append(dbHint).append("\n\n");
