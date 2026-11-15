@@ -2,22 +2,30 @@ package com.javabytes.mcp.tools.database;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.javabytes.mcp.database.DatabaseService;
 import com.javabytes.mcp.database.MyDatabaseClient;
 import com.javabytes.mcp.tools.Tool;
 import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
+import java.util.Locale;
 import java.util.regex.Pattern;
 
-/**
- * Runs MySQL {@code EXPLAIN} (optionally {@code EXPLAIN ANALYZE}) on a
- * read-only statement and returns the plan rows.
- */
 public class ExplainQueryTool implements Tool {
 
-    /** EXPLAIN is only allowed for statements that cannot write. */
     private static final Pattern SAFE_INNER = Pattern.compile("(?is)^(SELECT|WITH|TABLE)\\b");
+
+    private final DatabaseService db;
+
+    public ExplainQueryTool() {
+        this(new MyDatabaseClient());
+    }
+
+    /** Test-only construction with an explicit database service. */
+    ExplainQueryTool(DatabaseService db) {
+        this.db = db;
+    }
 
     @Override
     public String getName() { return "explain_query"; }
@@ -40,6 +48,7 @@ public class ExplainQueryTool implements Tool {
     public JsonNode execute(JsonNode params) {
         String sql = params.has("sql") ? params.get("sql").asText().trim() : "";
         boolean analyze = params.has("analyze") && params.get("analyze").asBoolean(false);
+        String jdbcUrl = params.has("jdbc_url") ? params.get("jdbc_url").asText() : null;
 
         if (sql.isEmpty()) {
             return ErrorHelper.error("MISSING_PARAM", "Parameter 'sql' is required");
@@ -55,8 +64,7 @@ public class ExplainQueryTool implements Tool {
 
         String prefix = analyze ? "EXPLAIN ANALYZE " : "EXPLAIN ";
         try {
-            MyDatabaseClient db = new MyDatabaseClient();
-            JsonNode result = db.query(prefix + statement);
+            JsonNode result = db.query(prefix + statement, jdbcUrl);
             if (result.isObject() && result.path("success").asBoolean(false)) {
                 ObjectNode out = (ObjectNode) result;
                 out.put("sql", statement);
@@ -78,6 +86,8 @@ public class ExplainQueryTool implements Tool {
                 .description("SELECT, WITH or TABLE statement to explain"));
         schema.prop("analyze", new Tool.BoolSchema()
                 .description("Use EXPLAIN ANALYZE and execute the SELECT to collect real timings (default false)"));
+        schema.prop("jdbc_url", new Tool.StringSchema()
+                .description("Optional JDBC URL to target a specific database (credentials embedded in URL); uses environment default when omitted"));
         schema.required("sql");
         return schema;
     }

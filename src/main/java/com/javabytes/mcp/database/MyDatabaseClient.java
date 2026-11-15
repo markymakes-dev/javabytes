@@ -5,45 +5,60 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.config.AppConfig;
+import com.javabytes.mcp.schema.Index;
+import com.javabytes.mcp.schema.InformationSchemaReader;
+import com.javabytes.mcp.schema.Relation;
+import com.javabytes.mcp.schema.SchemaModel;
+import com.javabytes.mcp.schema.Table;
 import com.javabytes.mcp.utils.JsonUtils;
 
 import javax.sql.DataSource;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-public class MyDatabaseClient {
+/**
+ * Production adapter for {@link DatabaseService} using MySQL via MysqlDataSource.
+ *
+ * <p>Read-only queries go through the shared guard (statement allowlist, row cap,
+ * timeout, identifier validation). Write operations are only available through
+ * {@link #executeWrite(String, String)} and require the explicit capability
+ * flag in the tool spec (see ADR 0007).</p>
+ */
+public class MyDatabaseClient implements DatabaseService {
 
     private static final int MAX_ROWS = 1000;
     private static final int QUERY_TIMEOUT_SECONDS = 30;
 
-    /** Only read-only statements are accepted by {@link #query(String)}. */
+    /** Only read-only statements are accepted by {@link #query(String, String)}. */
     private static final Pattern READ_ONLY = Pattern.compile(
             "(?is)^(SELECT|SHOW|DESCRIBE|DESC|EXPLAIN|WITH|TABLE)\\b");
     private static final Pattern LEADING_COMMENTS = Pattern.compile(
             "^(?:\\s+|--[^\\n]*\\n?|#[^\\n]*\\n?|/\\*.*?\\*/)*", Pattern.DOTALL);
 
-    private final DataSource dataSource;
+    private static final Pattern IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_$]*");
+
+    private final DataSource defaultDataSource;
     private final ObjectMapper MAPPER = JsonUtils.MAPPER;
+
+    public MyDatabaseClient() {
+        this(AppConfig.DB_URL, AppConfig.DB_USERNAME, AppConfig.DB_PASSWORD);
+    }
 
     public MyDatabaseClient(String jdbcUrl, String username, String password) {
         com.mysql.cj.jdbc.MysqlDataSource ds = new com.mysql.cj.jdbc.MysqlDataSource();
         ds.setUrl(jdbcUrl);
         ds.setUser(username);
         ds.setPassword(password);
-        this.dataSource = ds;
+        this.defaultDataSource = ds;
     }
 
-    public MyDatabaseClient() {
-        this(AppConfig.DB_URL, AppConfig.DB_USERNAME, AppConfig.DB_PASSWORD);
-    }
+    // --- DatabaseService interface (only custom implementations) ------------
 
-    /**
-     * Execute a read-only query. Returns
-     * {@code {success, columns, rows, row_count, truncated}} on success and
-     * {@code {success:false, error, message}} on failure.
-     */
-    public JsonNode query(String sql) {
+    @Override
+    public JsonNode query(String sql, String jdbcUrl) {
         String statement = sql == null ? "" : LEADING_COMMENTS.matcher(sql).replaceFirst("").trim();
         if (statement.isEmpty()) {
             return error("empty_query", "SQL query is empty");
@@ -56,7 +71,9 @@ public class MyDatabaseClient {
             return error("multiple_statements", "Multiple SQL statements are not allowed");
         }
 
-        try (Connection conn = dataSource.getConnection()) {
+        DataSource ds = resolveDataSource(jdbcUrl);
+
+        try (Connection conn = ds.getConnection()) {
             conn.setReadOnly(true);
             try (Statement stmt = conn.createStatement()) {
                 stmt.setMaxRows(MAX_ROWS + 1);
@@ -101,11 +118,83 @@ public class MyDatabaseClient {
         }
     }
 
+    @Override
+    public JsonNode executeWrite(String sql, String jdbcUrl) {
+        if (jdbcUrl == null || jdbcUrl.isBlank()) {
+            return error("MISSING_PARAM", "jdbc_url is required for write operations");
+        }
+        DataSource ds = resolveDataSource(jdbcUrl);
+        try (Connection conn = ds.getConnection();
+             Statement stmt = conn.createStatement()) {
+            int rows = stmt.executeUpdate(sql);
+            ObjectNode result = JsonUtils.MAPPER.createObjectNode();
+            result.put("success", true);
+            result.put("statement", truncate(sql));
+            result.put("rows_affected", rows);
+            result.put("status", "executed");
+            return result;
+        } catch (SQLException e) {
+            ObjectNode result = JsonUtils.MAPPER.createObjectNode();
+            result.put("success", false);
+            result.put("statement", truncate(sql));
+            result.put("status", "failed");
+            result.put("error", "database_error");
+            result.put("message", e.getMessage());
+            return result;
+        }
+    }
+
+    @Override
+    public Connection getConnection(String jdbcUrl) throws SQLException {
+        return resolveDataSource(jdbcUrl).getConnection();
+    }
+
+    @Override
+    public String quote(String identifier) {
+        if (!isIdentifier(identifier)) {
+            throw new IllegalArgumentException("Invalid SQL identifier: " + identifier);
+        }
+        return "`" + identifier + "`";
+    }
+
+    @Override
+    public boolean isIdentifier(String value) {
+        return value != null && IDENTIFIER.matcher(value).matches();
+    }
+
+    @Override
+    public SchemaModel readSchemaModel(String jdbcUrl) {
+        try {
+            return new InformationSchemaReader(this).read(jdbcUrl);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to read schema model", e);
+        }
+    }
+
+    // --- internal helpers ----------------------------------------------------
+
+    private DataSource resolveDataSource(String jdbcUrl) {
+        if (jdbcUrl != null && !jdbcUrl.isBlank()) {
+            com.mysql.cj.jdbc.MysqlDataSource ds = new com.mysql.cj.jdbc.MysqlDataSource();
+            ds.setUrl(jdbcUrl);
+            return ds;
+        }
+        return defaultDataSource;
+    }
+
     private ObjectNode error(String code, String message) {
         ObjectNode error = JsonUtils.MAPPER.createObjectNode();
         error.put("success", false);
         error.put("error", code);
         error.put("message", message);
         return error;
+    }
+
+    private static String truncate(String sql) {
+        int max = 200;
+        if (sql.length() <= max) {
+            return sql;
+        }
+        return sql.substring(0, max - 3) + "...";
     }
 }

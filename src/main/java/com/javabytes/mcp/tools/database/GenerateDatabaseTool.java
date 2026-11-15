@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.config.AppConfig;
+import com.javabytes.mcp.database.DatabaseService;
+import com.javabytes.mcp.database.MyDatabaseClient;
 import com.javabytes.mcp.tools.Tool;
 import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.ErrorHelper;
@@ -19,20 +21,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Creates a schema from proposed normalized DDL against a user-supplied JDBC
- * URL.
- *
- * <p>This tool executes (creates only — it never migrates) one or more DDL
- * statements. It is deliberately destructive: tables are created but never
- * altered or dropped. Before executing it checks whether any target table
- * already exists in the target database; without an explicit {@code confirm}
- * flag it refuses rather than risk silently colliding with an existing
- * schema (see {@code docs/adr/0005-generate-database-creates-does-not-migrate.md}).</p>
- *
- * <p>Pure Java — no new dependencies. Uses {@link PathValidator} for
- * sandbox-validated file reads when DDL comes from a {@code path} param.</p>
- */
 public class GenerateDatabaseTool implements Tool {
 
     private static final String NAME = "generate_database";
@@ -40,21 +28,15 @@ public class GenerateDatabaseTool implements Tool {
     /** Error returned when a target table already exists and confirm=false. */
     private static final String TABLE_EXISTS_ERROR_CODE = "TABLE_ALREADY_EXISTS";
 
-    /** Source of JDBC connections; injectable so tests can run without a live DB. */
-    @FunctionalInterface
-    public interface ConnectionFactory {
-        Connection create(String url) throws SQLException;
-    }
-
-    private final ConnectionFactory connectionFactory;
+    private final DatabaseService db;
 
     public GenerateDatabaseTool() {
-        this(url -> DriverManager.getConnection(url, null, null));
+        this(new MyDatabaseClient());
     }
 
-    /** Test-only construction with an explicit connection source. */
-    GenerateDatabaseTool(ConnectionFactory connectionFactory) {
-        this.connectionFactory = connectionFactory;
+    /** Test-only construction with an explicit database service. */
+    GenerateDatabaseTool(DatabaseService db) {
+        this.db = db;
     }
 
     @Override
@@ -253,7 +235,7 @@ public class GenerateDatabaseTool implements Tool {
     /** Which of the target tables already exist in the current database. */
     private List<String> existingTables(String jdbcUrl, List<String> targets) throws SQLException {
         List<String> existing = new ArrayList<>();
-        try (Connection conn = connectionFactory.create(jdbcUrl);
+        try (Connection conn = db.getConnection(jdbcUrl);
              Statement stmt = conn.createStatement()) {
             for (String table : targets) {
                 String check = "SELECT COUNT(*) AS n FROM information_schema.TABLES "
@@ -276,24 +258,8 @@ public class GenerateDatabaseTool implements Tool {
     // --- statement execution -----------------------------------------------
 
     private ObjectNode executeStatement(String jdbcUrl, String sql) throws Exception {
-        try (Connection conn = connectionFactory.create(jdbcUrl);
-             Statement stmt = conn.createStatement()) {
-            int rows = stmt.executeUpdate(sql);
-            ObjectNode result = JsonUtils.MAPPER.createObjectNode();
-            result.put("success", true);
-            result.put("statement", truncate(sql));
-            result.put("rows_affected", rows);
-            result.put("status", "executed");
-            return result;
-        } catch (SQLException e) {
-            ObjectNode result = JsonUtils.MAPPER.createObjectNode();
-            result.put("success", false);
-            result.put("statement", truncate(sql));
-            result.put("status", "failed");
-            result.put("error", "database_error");
-            result.put("message", e.getMessage());
-            return result;
-        }
+        JsonNode result = db.executeWrite(sql, jdbcUrl);
+        return (ObjectNode) result;
     }
 
     /** Extract the table name a CREATE TABLE statement creates, or null. */

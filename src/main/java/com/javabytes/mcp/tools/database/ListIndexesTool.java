@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.database;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.javabytes.mcp.database.DatabaseService;
 import com.javabytes.mcp.database.MyDatabaseClient;
 import com.javabytes.mcp.database.SchemaCatalog;
 import com.javabytes.mcp.tools.Tool;
@@ -11,14 +12,20 @@ import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 
-/**
- * Lists indexes (including the composite column order) from information_schema.
- */
 public class ListIndexesTool implements Tool {
+
+    private final DatabaseService db;
+
+    public ListIndexesTool() {
+        this(new MyDatabaseClient());
+    }
+
+    /** Test-only construction with an explicit database service. */
+    ListIndexesTool(DatabaseService db) {
+        this.db = db;
+    }
 
     @Override
     public String getName() { return "list_indexes"; }
@@ -40,6 +47,7 @@ public class ListIndexesTool implements Tool {
     @Override
     public JsonNode execute(JsonNode params) {
         String tableName = params.has("table_name") ? params.get("table_name").asText().trim() : "";
+        String jdbcUrl = params.has("jdbc_url") ? params.get("jdbc_url").asText() : null;
         if (!tableName.isEmpty() && !SchemaCatalog.isIdentifier(tableName)) {
             return ErrorHelper.error("INVALID_IDENTIFIER",
                     "table_name must be a plain identifier: " + tableName);
@@ -52,8 +60,7 @@ public class ListIndexesTool implements Tool {
                 + "ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX";
 
         try {
-            MyDatabaseClient db = new MyDatabaseClient();
-            ArrayNode rows = SchemaCatalog.rows(db.query(sql));
+            ArrayNode rows = SchemaCatalog.rows(db.query(sql, jdbcUrl));
 
             Map<String, ObjectNode> byKey = new LinkedHashMap<>();
             for (JsonNode row : rows) {
@@ -93,6 +100,8 @@ public class ListIndexesTool implements Tool {
         Tool.JsonSchema schema = new Tool.JsonSchema();
         schema.prop("table_name", new Tool.StringSchema()
                 .description("Optional plain table name; omit to list indexes for every table"));
+        schema.prop("jdbc_url", new Tool.StringSchema()
+                .description("Optional JDBC URL to target a specific database (credentials embedded in URL); uses environment default when omitted"));
         return schema;
     }
 }

@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.database;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.javabytes.mcp.database.DatabaseService;
 import com.javabytes.mcp.database.MyDatabaseClient;
 import com.javabytes.mcp.database.SchemaCatalog;
 import com.javabytes.mcp.tools.Tool;
@@ -15,12 +16,20 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Exports {@code SHOW CREATE TABLE} DDL for one table or the whole schema.
- */
 public class ExportSchemaDdlTool implements Tool {
 
     private static final int MAX_TABLES = 200;
+
+    private final DatabaseService db;
+
+    public ExportSchemaDdlTool() {
+        this(new MyDatabaseClient());
+    }
+
+    /** Test-only construction with an explicit database service. */
+    ExportSchemaDdlTool(DatabaseService db) {
+        this.db = db;
+    }
 
     @Override
     public String getName() { return "export_schema_ddl"; }
@@ -42,18 +51,18 @@ public class ExportSchemaDdlTool implements Tool {
     @Override
     public JsonNode execute(JsonNode params) {
         String requested = params.has("table_name") ? params.get("table_name").asText().trim() : "";
+        String jdbcUrl = params.has("jdbc_url") ? params.get("jdbc_url").asText() : null;
         if (!requested.isEmpty() && !SchemaCatalog.isIdentifier(requested)) {
             return ErrorHelper.error("INVALID_IDENTIFIER",
                     "table_name must be a plain identifier: " + requested);
         }
 
         try {
-            MyDatabaseClient db = new MyDatabaseClient();
-            String database = SchemaCatalog.currentDatabase(db);
+            String database = currentDatabase(jdbcUrl);
 
             List<String> tables = new ArrayList<>();
             if (requested.isEmpty()) {
-                tables.addAll(SchemaCatalog.tableNames(db));
+                tables.addAll(tableNames(jdbcUrl));
             } else {
                 tables.add(requested);
             }
@@ -65,7 +74,7 @@ public class ExportSchemaDdlTool implements Tool {
             ArrayNode entries = JsonUtils.MAPPER.createArrayNode();
             StringBuilder all = new StringBuilder();
             for (String table : tables) {
-                JsonNode result = db.query("SHOW CREATE TABLE " + SchemaCatalog.quote(table));
+                JsonNode result = db.query("SHOW CREATE TABLE " + SchemaCatalog.quote(table), jdbcUrl);
                 ArrayNode rows = SchemaCatalog.rows(result);
                 if (rows.isEmpty()) {
                     continue;
@@ -100,6 +109,46 @@ public class ExportSchemaDdlTool implements Tool {
         }
     }
 
+    private String currentDatabase(String jdbcUrl) {
+        try {
+            JsonNode result = db.query("SELECT DATABASE() AS db", jdbcUrl);
+            if (result != null && result.path("success").asBoolean(false)) {
+                ArrayNode rows = (ArrayNode) result.get("rows");
+                if (rows != null && !rows.isEmpty()) {
+                    JsonNode value = rows.get(0).get("db");
+                    if (value != null && !value.isNull()) {
+                        String db = value.asText();
+                        return db.isBlank() ? null : db;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+        return null;
+    }
+
+    private List<String> tableNames(String jdbcUrl) {
+        List<String> names = new ArrayList<>();
+        try {
+            JsonNode result = db.query(
+                    "SELECT TABLE_NAME AS name FROM information_schema.TABLES "
+                    + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' "
+                    + "ORDER BY TABLE_NAME", jdbcUrl);
+            if (result != null && result.path("success").asBoolean(false)) {
+                ArrayNode rows = (ArrayNode) result.get("rows");
+                if (rows != null) {
+                    for (JsonNode row : rows) {
+                        names.add(row.path("name").asText());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+        return names;
+    }
+
     /** SHOW CREATE TABLE returns columns named "Table" and "Create Table". */
     private static String createStatement(JsonNode row) {
         Iterator<Map.Entry<String, JsonNode>> fields = row.fields();
@@ -117,6 +166,8 @@ public class ExportSchemaDdlTool implements Tool {
         Tool.JsonSchema schema = new Tool.JsonSchema();
         schema.prop("table_name", new Tool.StringSchema()
                 .description("Optional plain table name; omit to export every base table"));
+        schema.prop("jdbc_url", new Tool.StringSchema()
+                .description("Optional JDBC URL to target a specific database (credentials embedded in URL); uses environment default when omitted"));
         return schema;
     }
 }

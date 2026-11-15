@@ -1,6 +1,7 @@
 package com.javabytes.mcp.tools.database;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.javabytes.mcp.database.DatabaseService;
 import com.javabytes.mcp.database.MyDatabaseClient;
 import com.javabytes.mcp.tools.Tool;
 import com.javabytes.mcp.tools.ToolSpec;
@@ -8,13 +9,24 @@ import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class DescribeTableTool implements Tool {
 
-    /** Plain SQL identifiers only; this prevents injection through table_name. */
     private static final Pattern IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_$]*");
+
+    private final DatabaseService db;
+
+    public DescribeTableTool() {
+        this(new MyDatabaseClient());
+    }
+
+    /** Test-only construction with an explicit database service. */
+    DescribeTableTool(DatabaseService db) {
+        this.db = db;
+    }
 
     @Override
     public String getName() { return "describe_table"; }
@@ -36,6 +48,7 @@ public class DescribeTableTool implements Tool {
     @Override
     public JsonNode execute(JsonNode params) {
         String tableName = params.has("table_name") ? params.get("table_name").asText().trim() : "";
+        String jdbcUrl = params.has("jdbc_url") ? params.get("jdbc_url").asText() : null;
         if (tableName.isEmpty()) {
             return ErrorHelper.error("MISSING_PARAM", "Parameter 'table_name' is required");
         }
@@ -49,8 +62,7 @@ public class DescribeTableTool implements Tool {
                 .map(p -> "`" + p + "`")
                 .collect(Collectors.joining("."));
         try {
-            MyDatabaseClient db = new MyDatabaseClient();
-            return db.query("DESCRIBE " + qualified);
+            return db.query("DESCRIBE " + qualified, jdbcUrl);
         } catch (Exception e) {
             return ErrorHelper.error("DB_ERROR", "Error describing table: " + e.getMessage());
         }
@@ -60,6 +72,8 @@ public class DescribeTableTool implements Tool {
     public Tool.JsonSchema getInputSchema() {
         Tool.JsonSchema schema = new Tool.JsonSchema();
         schema.prop("table_name", new Tool.StringSchema().description("Table to describe, optionally schema-qualified"));
+        schema.prop("jdbc_url", new Tool.StringSchema()
+                .description("Optional JDBC URL to target a specific database (credentials embedded in URL); uses environment default when omitted"));
         schema.required("table_name");
         return schema;
     }

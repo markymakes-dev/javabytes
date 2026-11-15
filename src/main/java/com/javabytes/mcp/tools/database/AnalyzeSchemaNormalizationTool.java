@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.database;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.javabytes.mcp.database.DatabaseService;
 import com.javabytes.mcp.database.MyDatabaseClient;
 import com.javabytes.mcp.database.SchemaCatalog;
 import com.javabytes.mcp.database.FunctionalDependencyAnalyzer;
@@ -28,14 +29,6 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Reviews the live schema for likely normal-form problems.
- *
- * <p>This is deliberately evidence-based: it inspects primary keys, foreign
- * keys, indexes, column types and (optionally) a bounded sample of list-like
- * columns. It does not claim to prove functional dependencies it cannot see.
- * The catalog snapshot comes from the shared {@link InformationSchemaReader}.</p>
- */
 public class AnalyzeSchemaNormalizationTool implements Tool {
 
     private static final int MAX_TABLES = 300;
@@ -55,6 +48,17 @@ public class AnalyzeSchemaNormalizationTool implements Tool {
 
     private record Finding(String normalForm, String severity, String table,
                            List<String> columns, String evidence, String recommendation) {
+    }
+
+    private final DatabaseService db;
+
+    public AnalyzeSchemaNormalizationTool() {
+        this(new MyDatabaseClient());
+    }
+
+    /** Test-only construction with an explicit database service. */
+    AnalyzeSchemaNormalizationTool(DatabaseService db) {
+        this.db = db;
     }
 
     @Override
@@ -89,10 +93,10 @@ public class AnalyzeSchemaNormalizationTool implements Tool {
         if (defaultTable.isEmpty()) {
             defaultTable = null;
         }
+        String jdbcUrl = params.has("jdbc_url") ? params.get("jdbc_url").asText() : null;
 
         try {
-            MyDatabaseClient db = new MyDatabaseClient();
-            SchemaModel schema = new InformationSchemaReader().read();
+            SchemaModel schema = new InformationSchemaReader(db).read(jdbcUrl);
             String database = schema.database();
             if (database == null) {
                 return ErrorHelper.error("NO_DATABASE",
@@ -115,7 +119,7 @@ public class AnalyzeSchemaNormalizationTool implements Tool {
             checkForeignKeyIndexes(tables, foreignKeys, indexes, findings);
             checkDuplicatedAttributes(tables, foreignKeys, findings);
             if (includeSamples && sampleRows > 0) {
-                checkDelimitedValues(db, tables, sampleRows, findings);
+                checkDelimitedValues(jdbcUrl, tables, sampleRows, findings);
             }
 
             ObjectNode dependencyAnalysis = null;
@@ -314,10 +318,10 @@ public class AnalyzeSchemaNormalizationTool implements Tool {
         }
     }
 
-    private static void checkDelimitedValues(MyDatabaseClient db,
-                                             Map<String, Table> tables,
-                                             int sampleRows,
-                                             List<Finding> findings) {
+    private void checkDelimitedValues(String jdbcUrl,
+                                      Map<String, Table> tables,
+                                      int sampleRows,
+                                      List<Finding> findings) {
         int sampledColumns = 0;
         for (Map.Entry<String, Table> entry : tables.entrySet()) {
             for (Column column : entry.getValue().columns()) {
@@ -336,7 +340,7 @@ public class AnalyzeSchemaNormalizationTool implements Tool {
                 try {
                     int nonBlank = 0;
                     int withDelimiter = 0;
-                    for (JsonNode row : SchemaCatalog.rows(db.query(sql))) {
+                    for (JsonNode row : SchemaCatalog.rows(db.query(sql, jdbcUrl))) {
                         String value = row.path("v").asText("");
                         if (value.isBlank()) {
                             continue;
@@ -534,6 +538,8 @@ public class AnalyzeSchemaNormalizationTool implements Tool {
                         + "declarations; nothing is inferred from data."));
         schema.prop("default_table", new Tool.StringSchema()
                 .description("Table used for dependency lines without a 'table:' prefix"));
+        schema.prop("jdbc_url", new Tool.StringSchema()
+                .description("Optional JDBC URL to target a specific database (credentials embedded in URL); uses environment default when omitted"));
         return schema;
     }
 }

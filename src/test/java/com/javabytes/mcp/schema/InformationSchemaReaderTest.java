@@ -10,6 +10,7 @@ import java.sql.Statement;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -162,7 +163,7 @@ class InformationSchemaReaderTest {
     void closesTheConnectionAfterReading() throws SQLException {
         boolean[] closed = {false};
         InformationSchemaReader reader = new InformationSchemaReader(
-                () -> fakeConnection(withDefaults(routes(
+                (InformationSchemaReader.ConnectionSupplier) () -> fakeConnection(withDefaults(routes(
                         "SELECT DATABASE() AS db", List.of(row("db", "javabytes_it")),
                         "information_schema.COLUMNS", List.of())), closed));
 
@@ -173,9 +174,10 @@ class InformationSchemaReaderTest {
 
     @Test
     void propagatesConnectionFailures() {
-        InformationSchemaReader reader = new InformationSchemaReader(() -> {
-            throw new SQLException("connection refused");
-        });
+        InformationSchemaReader reader = new InformationSchemaReader(
+                (InformationSchemaReader.ConnectionSupplier) () -> {
+                    throw new SQLException("connection refused");
+                });
 
         SQLException thrown = assertThrows(SQLException.class, reader::read);
         assertEquals("connection refused", thrown.getMessage());
@@ -189,7 +191,7 @@ class InformationSchemaReaderTest {
      * matching none of the known fragments still fails the test.
      */
     private static InformationSchemaReader reader(Map<String, List<Map<String, String>>> routes) {
-        return new InformationSchemaReader(() -> fakeConnection(withDefaults(routes), new boolean[1]));
+        return new InformationSchemaReader((InformationSchemaReader.ConnectionSupplier) () -> fakeConnection(withDefaults(routes), new boolean[1]));
     }
 
     private static Map<String, List<Map<String, String>>> withDefaults(

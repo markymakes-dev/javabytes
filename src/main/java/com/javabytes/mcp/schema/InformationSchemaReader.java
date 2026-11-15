@@ -1,6 +1,8 @@
 package com.javabytes.mcp.schema;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.javabytes.mcp.config.AppConfig;
+import com.javabytes.mcp.database.DatabaseService;
 import com.mysql.cj.jdbc.MysqlDataSource;
 
 import java.sql.Connection;
@@ -11,6 +13,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Reads the current MySQL schema into a {@link SchemaModel}.
@@ -21,22 +24,16 @@ import java.util.Map;
  * {@code TABLE_NAME, ORDINAL_POSITION} order, so column order is the physical
  * column order. The reader is read-only and performs no truncation.</p>
  *
- * <p>Connections are obtained through a {@link ConnectionSupplier}, which is
+ * <p>Connections are obtained through a {@link DatabaseService}, which is
  * the seam that lets tests supply their own connections. The default
- * constructor wires the environment-driven {@link AppConfig} configuration
- * exactly like {@link com.javabytes.mcp.database.MyDatabaseClient}.</p>
+ * constructor wires the environment-driven configuration exactly like
+ * {@link com.javabytes.mcp.database.MyDatabaseClient}.</p>
+ *
+ * <p>For backward compatibility with existing tests, a {@link ConnectionSupplier}
+ * functional interface is also accepted (the reader will create a minimal
+ * DatabaseService wrapper around it).</p>
  */
 public final class InformationSchemaReader {
-
-    /**
-     * Source of JDBC connections; declared as its own interface so
-     * implementations (and {@link java.sql.DataSource#getConnection()}-style
-     * methods) may throw {@link SQLException}.
-     */
-    @FunctionalInterface
-    public interface ConnectionSupplier {
-        Connection get() throws SQLException;
-    }
 
     private static final String DATABASE_SQL = "SELECT DATABASE() AS db";
 
@@ -63,38 +60,88 @@ public final class InformationSchemaReader {
                     + "WHERE k.TABLE_SCHEMA = DATABASE() AND k.REFERENCED_TABLE_NAME IS NOT NULL "
                     + "ORDER BY k.TABLE_NAME, k.CONSTRAINT_NAME, k.ORDINAL_POSITION";
 
-    private final ConnectionSupplier connections;
+    private final DatabaseService db;
 
     /** Environment-driven construction, mirroring MyDatabaseClient's defaults. */
     public InformationSchemaReader() {
-        this(() -> defaultDataSource().getConnection());
+        this(new com.javabytes.mcp.database.MyDatabaseClient());
     }
 
-    /** Construction with an explicit connection source (the test seam). */
+    /** Construction with an explicit database service (the test seam). */
+    public InformationSchemaReader(DatabaseService db) {
+        this.db = db;
+    }
+
+    /**
+     * Backward-compatible construction with a connection supplier (for existing tests).
+     * Creates a minimal DatabaseService wrapper around the supplier.
+     *
+     * @deprecated Use {@link #InformationSchemaReader(DatabaseService)} instead.
+     */
+    @Deprecated
     public InformationSchemaReader(ConnectionSupplier connections) {
-        this.connections = connections;
+        this(new DatabaseService() {
+            @Override
+            public JsonNode query(String sql, String jdbcUrl) {
+                throw new UnsupportedOperationException("Not supported via ConnectionSupplier");
+            }
+
+            @Override
+            public JsonNode executeWrite(String sql, String jdbcUrl) {
+                throw new UnsupportedOperationException("Not supported via ConnectionSupplier");
+            }
+
+            @Override
+            public Connection getConnection(String jdbcUrl) throws SQLException {
+                return connections.get();
+            }
+
+            @Override
+            public String quote(String identifier) {
+                if (!isIdentifier(identifier)) {
+                    throw new IllegalArgumentException("Invalid SQL identifier: " + identifier);
+                }
+                return "`" + identifier + "`";
+            }
+
+            @Override
+            public boolean isIdentifier(String value) {
+                return value != null && value.matches("[A-Za-z_][A-Za-z0-9_$]*");
+            }
+        });
     }
 
-    private static MysqlDataSource defaultDataSource() {
-        MysqlDataSource dataSource = new MysqlDataSource();
-        dataSource.setUrl(AppConfig.DB_URL);
-        dataSource.setUser(AppConfig.DB_USERNAME);
-        dataSource.setPassword(AppConfig.DB_PASSWORD);
-        return dataSource;
+    /**
+     * Source of JDBC connections; declared as its own functional interface so
+     * implementations (and {@link java.sql.DataSource#getConnection()}-style
+     * methods) may throw {@link SQLException}.
+     *
+     * @deprecated Use {@link DatabaseService} instead.
+     */
+    @Deprecated
+    @FunctionalInterface
+    public interface ConnectionSupplier {
+        Connection get() throws SQLException;
     }
 
     /**
      * Read the current database's tables, columns, indexes and foreign keys.
      *
+     * @param jdbcUrl optional JDBC URL to target a specific database; null/blank uses the environment default
      * @throws SQLException when the connection or any catalog query fails
      */
-    public SchemaModel read() throws SQLException {
-        try (Connection connection = connections.get()) {
+    public SchemaModel read(String jdbcUrl) throws SQLException {
+        try (Connection connection = db.getConnection(jdbcUrl)) {
             return new SchemaModel(
                     readDatabaseName(connection),
                     readTables(connection),
                     readRelations(connection));
         }
+    }
+
+    /** Legacy method for backward compatibility — uses environment default. */
+    public SchemaModel read() throws SQLException {
+        return read(null);
     }
 
     private String readDatabaseName(Connection connection) throws SQLException {
@@ -136,8 +183,6 @@ public final class InformationSchemaReader {
         try (Statement statement = connection.createStatement();
              ResultSet rows = statement.executeQuery(INDEXES_SQL)) {
             while (rows.next()) {
-                // Every indexed table has columns, so the builder always exists;
-                // skip defensively rather than inventing a table for an orphan index.
                 TableBuilder table = tables.get(rows.getString("TABLE_NAME"));
                 if (table != null) {
                     table.addIndex(

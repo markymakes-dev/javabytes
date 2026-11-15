@@ -1,6 +1,7 @@
 package com.javabytes.mcp.tools.database;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.javabytes.mcp.database.DatabaseService;
 import com.javabytes.mcp.database.MyDatabaseClient;
 import com.javabytes.mcp.tools.Tool;
 import com.javabytes.mcp.tools.ToolSpec;
@@ -8,6 +9,17 @@ import com.javabytes.mcp.utils.ErrorHelper;
 import com.javabytes.mcp.utils.JsonUtils;
 
 public class ListTablesTool implements Tool {
+
+    private final DatabaseService db;
+
+    public ListTablesTool() {
+        this(new MyDatabaseClient());
+    }
+
+    /** Test-only construction with an explicit database service. */
+    ListTablesTool(DatabaseService db) {
+        this.db = db;
+    }
 
     @Override
     public String getName() { return "list_tables"; }
@@ -28,9 +40,9 @@ public class ListTablesTool implements Tool {
 
     @Override
     public JsonNode execute(JsonNode params) {
+        String jdbcUrl = params.has("jdbc_url") ? params.get("jdbc_url").asText() : null;
         try {
-            MyDatabaseClient db = new MyDatabaseClient();
-            return db.query("SHOW TABLES");
+            return db.query("SHOW TABLES", jdbcUrl);
         } catch (Exception e) {
             return ErrorHelper.error("DB_ERROR", "Error listing tables: " + e.getMessage());
         }
@@ -38,6 +50,9 @@ public class ListTablesTool implements Tool {
 
     @Override
     public Tool.JsonSchema getInputSchema() {
-        return new Tool.JsonSchema();
+        Tool.JsonSchema schema = new Tool.JsonSchema();
+        schema.prop("jdbc_url", new Tool.StringSchema()
+                .description("Optional JDBC URL to target a specific database (credentials embedded in URL); uses environment default when omitted"));
+        return schema;
     }
 }

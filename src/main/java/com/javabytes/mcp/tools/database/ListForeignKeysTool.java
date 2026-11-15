@@ -3,6 +3,7 @@ package com.javabytes.mcp.tools.database;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.javabytes.mcp.database.DatabaseService;
 import com.javabytes.mcp.database.MyDatabaseClient;
 import com.javabytes.mcp.database.SchemaCatalog;
 import com.javabytes.mcp.tools.Tool;
@@ -13,10 +14,18 @@ import com.javabytes.mcp.utils.JsonUtils;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Lists foreign keys with their referenced table, rules and column order.
- */
 public class ListForeignKeysTool implements Tool {
+
+    private final DatabaseService db;
+
+    public ListForeignKeysTool() {
+        this(new MyDatabaseClient());
+    }
+
+    /** Test-only construction with an explicit database service. */
+    ListForeignKeysTool(DatabaseService db) {
+        this.db = db;
+    }
 
     @Override
     public String getName() { return "list_foreign_keys"; }
@@ -38,6 +47,7 @@ public class ListForeignKeysTool implements Tool {
     @Override
     public JsonNode execute(JsonNode params) {
         String tableName = params.has("table_name") ? params.get("table_name").asText().trim() : "";
+        String jdbcUrl = params.has("jdbc_url") ? params.get("jdbc_url").asText() : null;
         if (!tableName.isEmpty() && !SchemaCatalog.isIdentifier(tableName)) {
             return ErrorHelper.error("INVALID_IDENTIFIER",
                     "table_name must be a plain identifier: " + tableName);
@@ -56,8 +66,7 @@ public class ListForeignKeysTool implements Tool {
                 + "ORDER BY k.TABLE_NAME, k.CONSTRAINT_NAME, k.ORDINAL_POSITION";
 
         try {
-            MyDatabaseClient db = new MyDatabaseClient();
-            ArrayNode rows = SchemaCatalog.rows(db.query(sql));
+            ArrayNode rows = SchemaCatalog.rows(db.query(sql, jdbcUrl));
 
             Map<String, ObjectNode> byKey = new LinkedHashMap<>();
             for (JsonNode row : rows) {
@@ -101,6 +110,8 @@ public class ListForeignKeysTool implements Tool {
         Tool.JsonSchema schema = new Tool.JsonSchema();
         schema.prop("table_name", new Tool.StringSchema()
                 .description("Optional plain table name; omit to list every foreign key"));
+        schema.prop("jdbc_url", new Tool.StringSchema()
+                .description("Optional JDBC URL to target a specific database (credentials embedded in URL); uses environment default when omitted"));
         return schema;
     }
 }
