@@ -205,12 +205,13 @@ public class McpServerMain {
         registerTool(registry, new GenerateSpringBootDockerTool());
         registerTool(registry, new GenerateSpringBootTestTool());
 
-        // Diagnostic tools (5)
+        // Diagnostic tools (6)
         registerTool(registry, new ProjectDiagnosticTool());
         registerTool(registry, new FixMavenDependenciesTool());
         registerTool(registry, new CreateMyDatabaseClientTool());
         registerTool(registry, new FixJavaFXHeadlessTool());
         registerTool(registry, new FixAllTool());
+        registerTool(registry, new VerifyGeneratedTool());
     }
 
     /** Declares a tool; registration happens once the catalog is derived. */
