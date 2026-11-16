@@ -65,3 +65,21 @@ The portion of the source app JavaBytes translates — only constructs it can pr
 **Manual work**:
 Anything the pipeline cannot prove correct, reported as a list for human follow-up rather than guessed at.
 _Avoid_: TODO comments in generated code
+
+## Integration
+
+**Design system**:
+A component library and token set applied to generated Vaadin/JavaFX UIs (e.g., Material, Fluent, Ant Design). Selected per-conversion via `translate_webapp` parameter. Default `none` (vanilla components).
+_Avoid_: UI kit, theme (overloaded)
+
+**Antislop gate**:
+A deterministic verification step in the pipeline that fails generation if output violates coding standards (no TODO comments, immutable records, explicit nullability, no raw types, no `any`). Runs before Prove.
+_Avoid_: linting (implies post-hoc), style guide (not enforced)
+
+**Retro-issue loop**:
+Automatic creation of GitHub issues from `/retro` findings, tagged with conversion context (source path, UI strategy, manual work inventory). Feeds `/triage` in the next cycle.
+_Avoid_: local notes (lost), manual issue filing (forgotten)
+
+**Pipeline atomicity**:
+The conversion pipeline (extract_data_models → models_to_schema → generate_database → translate_webapp → Prove) is a single implement step. Individual stages are not separate tickets; the holistic compile+start verification requires atomic execution.
+_Avoid_: per-stage tickets (breaks verification)

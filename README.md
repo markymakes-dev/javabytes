@@ -70,7 +70,7 @@ and `environment` rather than `env`:
 ## Build from source
 
 ```bash
-mvn clean test        # 70 unit tests (6 more run live only when JAVABYTES_RUN_DB_TESTS=1)
+mvn clean test        # 146 unit tests (6 more run live only when JAVABYTES_RUN_DB_TESTS=1)
 mvn package           # produces target/javabytes.jar (shaded, runnable)
 ```
 
@@ -214,10 +214,12 @@ into source.
 
 ## Tests
 
-`mvn test` runs 70 tests covering the sandbox (traversal, null bytes, sibling-prefix),
+`mvn test` runs 146 tests covering the sandbox (traversal, null bytes, sibling-prefix),
 directory creation results, glob and content search, CSS conversion, generated UI code, SQL
 rejection, dependency false positives, error shapes, tool metadata completeness and
-annotations, feature-flag precedence, and client-root narrowing/reset.
+annotations, feature-flag precedence, client-root narrowing/reset, JS translation,
+webapp translation with JavaFX CRUD views, scan-only and report-path modes, and Maven
+Wrapper generation.
 
 MySQL and JavaFX integration tests require a real database. Canvas export was verified
 end-to-end over stdio (200x100 PNG, correct magic bytes). A 26-check stdio scenario also
