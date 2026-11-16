@@ -93,6 +93,27 @@ Never silently drop a construct, and never present plausible-but-non-compiling c
 - The generated project compiles (`mvn -B package` success) AND starts (endpoint responds).
 - Every emitted file either compiles or is listed as unverified.
 - The manual-work inventory covers every skipped construct.
+- **`/retro` executed and retro-issue loop ran** (creates GitHub issues for tooling gaps via `scripts/retro-to-issues.sh|.ps1`).
+
+## Retro-Issue Loop (ADR 0011)
+
+After a conversion completes, run `/retro` to identify tooling gaps. Then run the retro-issue script to auto-create GitHub issues:
+
+```bash
+# Linux/macOS/Git Bash
+./scripts/retro-to-issues.sh RETROSPECTIVE.md /path/to/source keep-frontend
+
+# Windows PowerShell
+.\scripts\retro-to-issues.ps1 -RetroFile RETROSPECTIVE.md -SourcePath /path/to/source -UiStrategy keep-frontend
+```
+
+The script:
+1. Parses `### Tooling Gaps` section of the retrospective (format: `- tool_name: description`)
+2. Creates GitHub issues in `markymakes-dev/javabytes` with labels `retro`, `needs-triage`, `<tool-name>`
+3. Includes conversion context (source path, UI strategy, manual work inventory)
+4. Feeds `/triage` in the next cycle
+
+The retrospective should include a `### Tooling Gaps` section listing each gap per tool.
 
 ---
 
