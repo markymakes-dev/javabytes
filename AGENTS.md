@@ -41,3 +41,21 @@ Five canonical triage roles mapped to default label names. See
 
 Single-context: `GLOSSARY.md` at the root, decisions in `docs/adr/`. See
 `docs/agents/domain.md`.
+
+## Navigation pointers
+
+### oh-my-opencode-slim (OMOS)
+
+- **Config:** `~/.config/opencode/oh-my-opencode-slim.json` (preset: `nvidia-nim-direct`)
+- **Agents:** Orchestrator, Explorer, Oracle, Council, Designer, Fixer (+ optional Observer)
+- **Presets:** `nvidia-nim-direct`, `nvidia-free`, `deepseek-free`, `glm-free`, `opencode-go`
+- **API Key:** Set `NVIDIA_API_KEY` in Desktop Settings → Environment Variables AND in `~/.env.nvidia`
+- **Run in Desktop:** Set API key → `/preset nvidia-nim-direct` → `ping all agents`
+- **Commands:** `/plan`, `/tdd`, `/code-review`, `/security`, `/deepwork`, `/verify`, `@explorer`, `@oracle`, `@fixer`, `@designer`, `@observer`
+- **Marketplace:** `bunx oh-my-opencode-slim@latest marketplace install <agent>`
+- **Companion:** `bunx oh-my-opencode-slim@latest companion install` (floating window)
+- **Web UI:** `opencode web --port 4096` → http://localhost:4096
+
+### opencode TTY Requirement
+
+⚠️ **opencode requires TTY** — run in real terminal (PowerShell/CMD) or opencode Desktop app. This environment (windowless service) cannot run opencode.

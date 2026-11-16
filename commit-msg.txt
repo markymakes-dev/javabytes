@@ -1,0 +1,6 @@
+Add pre-commit hooks (husky + lint-staged + prettier)
+
+- Husky pre-commit hook runs lint-staged + Maven tests
+- lint-staged runs Prettier on staged files
+- Prettier config with standard defaults
+- Works from npm subdirectory (Java project at repo root)

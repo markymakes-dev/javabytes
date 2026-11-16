@@ -1,0 +1,2 @@
+cd .. && npx lint-staged
+cd .. && mvn -B test -q

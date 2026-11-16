@@ -30,7 +30,8 @@
   ],
   "scripts": {
     "prepack": "node scripts/copy-jar.js",
-    "test": "node --test test/launcher.test.js"
+    "test": "node --test test/launcher.test.js",
+    "prepare": "husky"
   },
   "engines": {
     "node": ">=18"
@@ -39,5 +40,10 @@
     "win32",
     "linux",
     "darwin"
-  ]
+  ],
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.1",
+    "prettier": "^3.10.1"
+  }
 }
