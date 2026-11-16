@@ -290,6 +290,9 @@ function main(argv = process.argv.slice(2), env = process.env, root) {
   if (command === "doctor") {
     return doctor({ env, root });
   }
+  if (command === "config") {
+    return config({ env, root, argv });
+  }
 
   const jar = resolveJar({ env, root });
   if (!jar) {
@@ -329,6 +332,120 @@ function main(argv = process.argv.slice(2), env = process.env, root) {
   });
 }
 
+/**
+ * `javabytes config --client=opencode|claude|cursor|vscode` prints a ready-to-paste
+ * MCP server config for the given client. Supports --jar to override jar location.
+ */
+function config({ env, root, argv }) {
+  const args = argv.slice(1);
+  let client = "opencode";
+  let jarPath = null;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--client" && i + 1 < args.length) {
+      client = args[i + 1];
+      i++;
+    } else if (arg.startsWith("--client=")) {
+      client = arg.slice("--client=".length);
+    } else if (arg === "--jar" && i + 1 < args.length) {
+      jarPath = args[i + 1];
+      i++;
+    } else if (arg.startsWith("--jar=")) {
+      jarPath = arg.slice("--jar=".length);
+    }
+  }
+
+  const java = resolveJava({ env });
+  const jar = jarPath || resolveJar({ env, root });
+  if (!jar) {
+    console.error("Cannot find javabytes.jar. Use --jar or install the package.");
+    return Promise.resolve(1);
+  }
+
+  const dbUrl = env.JAVABYTES_DB_URL || "jdbc:mysql://localhost:3306/appdb";
+  const dbUser = env.JAVABYTES_DB_USER || "app";
+  const dbPassword = env.JAVABYTES_DB_PASSWORD || "change-me";
+  const allowedDirs = env.JAVABYTES_ALLOWED_DIRS || process.cwd();
+
+  const configs = {
+    opencode: {
+      mcp: {
+        javabytes: {
+          type: "local",
+          command: ["npx", "-y", "javabytes-mcp"],
+          environment: {
+            JAVABYTES_DB_URL: dbUrl,
+            JAVABYTES_DB_USER: dbUser,
+            JAVABYTES_DB_PASSWORD: dbPassword,
+            JAVABYTES_ALLOWED_DIRS: allowedDirs,
+          },
+          enabled: true,
+        },
+      },
+    },
+    claude: {
+      mcpServers: {
+        javabytes: {
+          command: "npx",
+          args: ["-y", "javabytes-mcp"],
+          env: {
+            JAVABYTES_DB_URL: dbUrl,
+            JAVABYTES_DB_USER: dbUser,
+            JAVABYTES_DB_PASSWORD: dbPassword,
+            JAVABYTES_ALLOWED_DIRS: allowedDirs,
+          },
+        },
+      },
+    },
+    cursor: {
+      mcpServers: {
+        javabytes: {
+          command: "npx",
+          args: ["-y", "javabytes-mcp"],
+          env: {
+            JAVABYTES_DB_URL: dbUrl,
+            JAVABYTES_DB_USER: dbUser,
+            JAVABYTES_DB_PASSWORD: dbPassword,
+            JAVABYTES_ALLOWED_DIRS: allowedDirs,
+          },
+        },
+      },
+    },
+    vscode: {
+      inputs: [
+        {
+          type: "promptString",
+          id: "javabytes-db-password",
+          description: "MySQL password for JavaBytes",
+          password: true,
+        },
+      ],
+      servers: {
+        javabytes: {
+          type: "stdio",
+          command: "npx",
+          args: ["-y", "javabytes-mcp"],
+          env: {
+            JAVABYTES_DB_URL: dbUrl,
+            JAVABYTES_DB_USER: dbUser,
+            JAVABYTES_DB_PASSWORD: "${input:javabytes-db-password}",
+            JAVABYTES_ALLOWED_DIRS: allowedDirs,
+          },
+        },
+      },
+    },
+  };
+
+  const cfg = configs[client];
+  if (!cfg) {
+    console.error(`Unknown client: ${client}. Supported: ${Object.keys(configs).join(", ")}`);
+    return Promise.resolve(1);
+  }
+
+  console.log(JSON.stringify(cfg, null, 2));
+  return Promise.resolve(0);
+}
+
 module.exports = {
   resolveJar,
   resolveJava,
@@ -341,5 +458,6 @@ module.exports = {
   looksLikeNpx,
   version,
   doctor,
+  config,
   main,
 };

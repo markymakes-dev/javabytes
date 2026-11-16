@@ -67,6 +67,52 @@ and `environment` rather than `env`:
 }
 ```
 
+## First Run (recommended)
+
+```bash
+# 1. Check your environment
+npx -y javabytes-mcp doctor
+
+# 2. Generate the config for your client (copy-paste into its config file)
+npx -y javabytes-mcp config --client=opencode   # → ~/.config/opencode/opencode.json
+npx -y javabytes-mcp config --client=claude     # → claude_desktop_config.json
+npx -y javabytes-mcp config --client=cursor     # → Cursor MCP settings
+npx -y javabytes-mcp config --client=vscode     # → .vscode/mcp.json
+
+# 3. Restart your client and verify tools load (should show 44/74)
+```
+
+Example `doctor` output:
+```
+PASS java: 21.0.5 via JAVA_HOME (/usr/lib/jvm/java-21-openjdk/bin/java)
+PASS jar: present (15.8 MB)
+INFO db: JAVABYTES_DB_URL is not set - MySQL tools will be unconfigured
+PASS update: up to date (1.2.0)
+4 checks, 0 problems
+```
+
+Quick reference for config locations:
+
+| Client | Config command | Where to paste |
+|---|---|---|
+| OpenCode | `npx -y javabytes-mcp config --client=opencode` | `~/.config/opencode/opencode.json` |
+| Claude Desktop | `npx -y javabytes-mcp config --client=claude` | `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows) |
+| Cursor | `npx -y javabytes-mcp config --client=cursor` | `~/.cursor/mcp.json` |
+| VS Code | `npx -y javabytes-mcp config --client=vscode` | `.vscode/mcp.json` in your workspace |
+
+Then set your real DB credentials:
+```bash
+# Optional: configure MySQL for live queries
+export JAVABYTES_DB_URL=jdbc:mysql://localhost:3306/yourdb
+export JAVABYTES_DB_USER=youruser
+export JAVABYTES_DB_PASSWORD=yourpassword
+# Restart the client / MCP server
+```
+
+The `doctor` command checks Java ≥ 21, the bundled jar, MySQL env, and npm updates.
+The `config` command prints ready-to-paste JSON with placeholders — just update the
+password and database URL, then restart your client.
+
 ## Build from source
 
 ```bash
@@ -96,9 +142,9 @@ stdout is reserved for JSON-RPC. All logging goes to stderr.
 | `JAVABYTES_ENABLE` | category defaults | Enable/disable tools by group or name |
 | `JAVABYTES_DISABLE` | category defaults | Disable specific tools |
 | `JAVABYTES_LOG_FILE` | unset | Optional JSON-RPC trace log |
-| `JAVABYTES_DB_URL` | `jdbc:mysql://localhost:3306/mydb` | MySQL JDBC URL |
-| `JAVABYTES_DB_USER` | `user` | MySQL user |
-| `JAVABYTES_DB_PASSWORD` | `password` | MySQL password |
+| `JAVABYTES_DB_URL` | `jdbc:mysql://localhost:3306/appdb` | MySQL JDBC URL |
+| `JAVABYTES_DB_USER` | `app` | MySQL user |
+| `JAVABYTES_DB_PASSWORD` | `change-me` | MySQL password |
 
 Example:
 
