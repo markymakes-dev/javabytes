@@ -50,8 +50,10 @@ This is the flagship pipeline. It requires a database.
 
 5. **translate_webapp** — Generate the complete Maven project file map:
    - Spring Boot REST + JPA entities + Spring Data JPA repositories + CRUD controllers.
-   - Per-target: `keep-frontend` (static assets served as-is), `javafx` (desktop client), `spring-boot-vaadin` (browser), `auto`.
+   - Per-target: `keep-frontend` (static assets served as-is), `javafx` (desktop client + per-entity CRUD views + HTTP client), `spring-boot-vaadin` (browser), `auto`.
    - Output = `files` map (path → content) + `limitations` array + `README.md` with run instructions.
+   - **Optional params**: `scan_only=true` (returns analysis + migration plan without generating scaffold), `report_path` (writes detailed TRANSLATION-REPORT.md with Summary, Scaffold Files, Limitations, Browser APIs, Data-Centric Generation, Written Files).
+   - **Maven Wrapper 3.3.2** embedded in generated Spring Boot/JavaFX projects (mvnw, mvnw.cmd, .mvn/wrapper/).
 
 6. **Prove** — The generated project **must compile AND start**:
    - `mvn -B package` (compiles)
@@ -66,6 +68,14 @@ Every conversion ends with three lists:
 - **Manual work** — each skipped or approximated construct, with the reason analysis gave.
 - **Unverified** — anything that was not compile-checked or start-checked.
 
+**New in v1.1.0**: When `report_path` is provided, `translate_webapp` emits a detailed `TRANSLATION-REPORT.md` with:
+- Summary table (files/lines/scaffold/written/limitations)
+- Scaffold Files Generated table
+- Limitations list
+- Browser-Bound Files table (from analysis.browser_apis)
+- Data-Centric Generation details (entities parse, JDBC URL)
+- Written Files list
+
 Never silently drop a construct, and never present plausible-but-non-compiling code as done.
 
 ## Refusals
@@ -74,6 +84,7 @@ Never silently drop a construct, and never present plausible-but-non-compiling c
 - Do not convert what analysis cannot type. When the code leans on dynamic behaviour — `eval`, prototype mutation, heavy metaprogramming — name coexistence options (GraalJS, Rhino, JSweet, GWT) instead of forcing a rewrite.
 - Do not call the migration complete while manual items remain.
 - Do not silently choose a UI strategy — ask the human (or state `auto`'s reasoning explicitly).
+- `translate_javascript` `write_to` **must** end with `.java` (e.g., `.../MyClass.java`). Directory paths are rejected to prevent silent overwrites (collision bug: multiple units writing to `core.java`).
 
 ## Done when
 
