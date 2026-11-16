@@ -23,6 +23,16 @@ public class AppConfig {
     public static final String SERVER_VERSION = "1.0.0";
     public static final String JAVA_VERSION = System.getProperty("java.version");
 
+    /**
+     * Supported MCP protocol versions, newest first.
+     * Mirrors the official MCP Java SDK's {@code ProtocolVersions}.
+     */
+    public static final List<String> SUPPORTED_PROTOCOL_VERSIONS = List.of(
+            "2025-11-25",
+            "2025-06-18",
+            "2025-03-26",
+            "2024-11-05");
+
     private static final boolean WINDOWS =
             System.getProperty("os.name", "").toLowerCase(Locale.ROOT).startsWith("windows");
 
