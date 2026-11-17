@@ -8,9 +8,9 @@ Built 2026-11-14 from the repo (`@88480e8`/`fc8bd06`) and the maintainer session
 ## What the thing is
 
 - JavaBytes: a general-purpose **MCP server written in Java**. JSON-RPC 2.0 over stdio, **hand-rolled on Jackson — no MCP SDK**.
-- 71 tools; 41 enabled by default; 30 opt-in generators (UI/DESIGN/CODEGEN/SPRINGBOOT categories off unless `JAVABYTES_ENABLE`).
+- 75 tools; 45 enabled by default; 30 opt-in generators (UI/DESIGN/CODEGEN/SPRINGBOOT categories off unless `JAVABYTES_ENABLE`).
 - Tool families: filesystem (sandboxed), MySQL analysis (read-only by contract), JSON, JavaFX canvas, diagnostics, Spring Boot generators, and the JS→Java conversion set (`analyze_javascript`, `translate_javascript`, `translate_webapp`).
-- Install paths: `npx -y javabytes-mcp` (bundles a 16 MB shaded jar; launcher resolves Java via `JAVABYTES_JAVA` → `JAVA_HOME` → `PATH`); GitHub release jar; Docker image (verified by JSON-RPC handshake); Glama hosted endpoint (zero local install).
+- Install paths: `npx -y javabytes-mcp` (bundles a ~15.8 MB shaded jar; launcher resolves Java via `JAVABYTES_JAVA` → `JAVA_HOME` → `PATH`); GitHub release jar; Docker image (verified by JSON-RPC handshake); Glama hosted endpoint (zero local install); listed in the official MCP Registry (`io.github.markymakes-dev/javabytes`, provenance-signed publishes).
 - MIT. Repo: github.com/markymakes-dev/javabytes. npm: `javabytes-mcp`. Solo maintainer (markymakes.dev), team consumes.
 
 ## The hand-rolled protocol (why no SDK)
@@ -18,7 +18,7 @@ Built 2026-11-14 from the repo (`@88480e8`/`fc8bd06`) and the maintainer session
 - The official MCP Java SDK exists — chose not to use it. Wanted zero dependency risk on a fast-moving spec, full control of the stdio loop, and a shaded jar that stays small.
 - Line-delimited JSON-RPC; **stdout is reserved exclusively for the protocol** — every log line goes to stderr, enforced in the registry with a comment and tests. One printf to stdout by a library would corrupt the stream.
 - Single-threaded loop; protocol-version negotiation; MCP roots handshake as loop-local state.
-- Numbers: whole server is one ~393-line main class plus small modules (pre-refactor).
+- Numbers: whole server was one ~393-line main class plus small modules (pre-refactor) — then split into transport / protocol-session / schema-renderer / composition-root modules (ADR 0006–0008 + the McpServerMain division); the original class is now a thin facade.
 
 ## The honesty posture (the thesis candidate)
 
@@ -36,9 +36,9 @@ Built 2026-11-14 from the repo (`@88480e8`/`fc8bd06`) and the maintainer session
   - Extract: `extract_data_models` parses mongoose / prisma / sequelize / plain SQL / JSON stores into one schema model, with confidence per field.
   - Propose+create: normalized DDL proposed, then executed against a **user-supplied JDBC URL**.
   - Generate: Spring Boot + JPA backend + chosen UI as a complete Maven-standard file map.
-  - Prove: **compiles AND starts** — the definition of done, not a stretch goal.
+  - Prove: **compiles AND starts** — the definition of done, not a stretch goal. A `verify_generated` gate runs first: deterministic checks (no TODO/FIXME, no raw types, Javadoc on public APIs…) so slop never reaches the compile step.
 - **keep-frontend is the default** (ADR 0004): original HTML/CSS/JS untouched and pixel-identical; backend becomes Spring Boot REST; frontend re-pointed at the API. JavaFX (desktop) and Vaadin (browser, all-Java) are opt-in. `auto` only when no human is present — and then it must state what it picked and why.
-- **generate_database creates; it does not migrate** — refuses to touch an existing schema without an explicit confirm flag. ALTER/migration is out of 1.1.0 scope. (ADR 0005 pending.)
+- **generate_database creates; it does not migrate** — refuses to touch an existing schema without an explicit confirm flag. ALTER/migration is out of 1.1.0 scope. (ADR 0005.)
 - Provenance is a first-class word: **Discovered** (live DB catalog), **Parsed** (from source code), **Proposed** (generated — always "verify"). Confidence is high/medium/low, **never a number**.
 - JavaFX honesty: JavaFX is **not a web technology** — no real CSS, no browser. Choosing it means a desktop app, presented as such.
 
@@ -59,7 +59,7 @@ Built 2026-11-14 from the repo (`@88480e8`/`fc8bd06`) and the maintainer session
 - Smithery closed to submissions (Oct 31); PulseMCP paused (auto-ingests the official registry — publish there and they pick it up); appcypher's list archived. The directory landscape churns; the official registry is the keystone.
 - GitHub bots: Dependabot configured with **grouped minor+patch PRs** (one batch per ecosystem for a solo maintainer) and majors held with `@dependabot ignore` — JavaFX 21→27 and mysql-connector 9→26 paused deliberately (floor decision + shaded-driver risk). JUnit 5→6 taken same day it arrived.
 - CI: 3 jobs — Java 21 `mvn -B package` (tests + shaded jar), launcher tests on Node 18 AND 22 (the declared floor, not an arbitrary LTS).
-- Launcher grew `version` + `doctor` subcommands: Java resolution source + major version (WARN < 21), jar presence/size, DB env presence, best-effort latest-version check (3s timeout, offline-safe). `javabytes upgrade` was considered and **rejected** — `npx -y` already auto-resolves; doctor prints the update command instead.
+- Launcher grew `version` + `doctor` + `config` subcommands: doctor checks Java resolution source + major version (WARN < 21), jar presence/size, DB env presence, best-effort latest-version check (3s timeout, offline-safe); `config` emits ready-to-paste MCP config for opencode / Claude Desktop / Cursor / VS Code. `javabytes upgrade` was considered and **rejected** — `npx -y` already auto-resolves; doctor prints the update command instead.
 
 ## Design decisions with reasons (ADR-flavored fragments)
 
@@ -71,11 +71,26 @@ Built 2026-11-14 from the repo (`@88480e8`/`fc8bd06`) and the maintainer session
 
 ## Numbers worth citing
 
-- 71 tools / 41 default-on / 30 opt-in.
-- 96 Java tests (20 added with the schema model) + 19 launcher tests + 26 stdio e2e checks; 6 live-MySQL integration tests gated by `JAVABYTES_RUN_DB_TESTS=1`.
-- 16.6 MB npm package (bundled jar); ~16 MB release jar.
+- 75 tools / 45 default-on / 30 opt-in.
+- 148 Java tests + 19 launcher tests + 39 stdio e2e checks; 6 live-MySQL integration tests gated by `JAVABYTES_RUN_DB_TESTS=1`.
+- npm tarball ~14 MB bundling a 15.8 MB shaded jar (v1.2.1).
+- 998 npm downloads in the first full week (api.npmjs.org, 2026-11-10 → 16; includes mirrors/CI pulls — cite with the honesty caveat).
 - Glama indexes 120k+ MCP servers; ours listed with maintenance grade B, claimed, badge live.
 - One release = `git tag vX.Y.Z` + push. Everything downstream automatic.
+
+## Fresh captures (2026-11-17, v1.2.1)
+
+- `javabytes doctor` (local run — 4 checks, 0 problems):
+
+  ```
+  PASS java: 25.0.5 via JAVA_HOME (C:\Program Files\Eclipse Adoptium\jdk-25.0.5.8-hotspot\bin\java.exe)
+  PASS jar: present (15.8 MB)
+  INFO db: JAVABYTES_DB_URL is not set - MySQL tools will be unconfigured
+  PASS update: up to date (1.2.1)
+  4 checks, 0 problems
+  ```
+
+- npm downloads: 998/week (first full week post-publish).
 
 ## Opinion fragments (usable as thesis seasoning)
 
@@ -87,8 +102,8 @@ Built 2026-11-14 from the repo (`@88480e8`/`fc8bd06`) and the maintainer session
 
 ## Gaps (need user input or get cut)
 
-- [ ] Who is this written for, exactly — Java devs curious about MCP? AI-tooling people? Both?
-- [ ] Any numbers on real usage (team installs, Glama traffic) — or do we write pre-adoption honestly?
-- [ ] A screenshot/terminal capture of `doctor` output or a conversion report would carry weight — none exists yet.
-- [ ] War story detail for the npm 2FA saga — how much ops pain to include?
-- [ ] The origin: why Java specifically (team is Java-first? gap in the MCP ecosystem?) — need the real reason in one quote.
+- [x] Audience (user, 2026-11-17): **both, lead with Java devs** — Java devs curious about MCP primary; AI-tooling people secondary.
+- [x] Real usage numbers: 998 downloads/week (first full week) — write pre-adoption honestly, caveat included.
+- [x] Terminal capture of `doctor` output exists (Fresh captures above); a polished screenshot still optional.
+- [x] npm 2FA saga depth (user, 2026-11-17): **one tight paragraph** — the non-TTY gotcha + OIDC resolution, no blow-by-blow.
+- [x] Origin (user, 2026-11-17): **gap in the MCP ecosystem** — draft quote to tune: "The MCP ecosystem was TypeScript and Python first; Java shops had nothing general-purpose to build on, so we built it."
