@@ -800,6 +800,8 @@ public class TranslateWebappTool implements Tool {
                     private final Button addBtn = new Button("Add %s");
                     private final Button editBtn = new Button("Edit");
                     private final Button deleteBtn = new Button("Delete");
+                    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper =
+                            new com.fasterxml.jackson.databind.ObjectMapper();
 
                     public %s(ApiClient apiClient) {
                         this.apiClient = apiClient;
@@ -905,13 +907,18 @@ public class TranslateWebappTool implements Tool {
                         className,
                         listViewClass,
                         className, className, className,
-                        className, className, className, idType, capitalize(idMember),
+                        listViewClass,
+                        className, idType, capitalize(idMember),
                         columns.toString(),
-                        className, className, formViewClass, formViewClass, className, className,
+                        className, className, className,
                         plural.toLowerCase(),
                         className,
-                        className, idType, capitalize(idMember),
-                        plural.toLowerCase(), idType, capitalize(idMember)
+                        className,
+                        formViewClass, formViewClass,
+                        className,
+                        className,
+                        className, capitalize(idMember),
+                        plural.toLowerCase(), capitalize(idMember)
                 );
     }
 

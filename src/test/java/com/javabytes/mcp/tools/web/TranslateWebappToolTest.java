@@ -544,11 +544,20 @@ class TranslateWebappToolTest {
         assertTrue(listView.contains("Button editBtn"));
         assertTrue(listView.contains("Button deleteBtn"));
 
+        // Template alignment (regression: format args were misaligned by one
+        // from the constructor onward, producing `public User(ApiClient ...)`
+        // inside UserListView, `TableColumn<User, User>` generics and stray
+        // getType()/getString() calls that never compile).
+        assertTrue(listView.contains("public class UserListView"), listView);
+        assertTrue(listView.contains("public UserListView(ApiClient apiClient)"), listView);
+        assertTrue(listView.contains("TableColumn<User, Integer> idCol"), listView);
+        assertTrue(listView.contains("getId()"), listView);
+        assertTrue(listView.contains("ObjectMapper objectMapper"), listView);
+        assertTrue(listView.contains("convertValue(node, User.class)"), listView);
+        assertTrue(listView.contains("new UserFormView(apiClient"), listView);
+
         // Verify UserFormView has form fields
         String formView = Files.readString(desktop.resolve("src/main/java/com/example/ui/UserFormView.java"));
-        System.out.println("=== UserFormView content ===");
-        System.out.println(formView);
-        System.out.println("=== End UserFormView ===");
         assertTrue(formView.contains("class UserFormView"));
         assertTrue(formView.contains("TextField emailField"));
         assertTrue(formView.contains("DatePicker createdAtField"));
