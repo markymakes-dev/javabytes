@@ -176,10 +176,11 @@ public class CompositionRoot {
         // JSON tools (1)
         registerTool(registry, new JsonQueryTool());
 
-        // JavaScript / web migration tools (3)
+        // JavaScript / web migration tools (4)
         registerTool(registry, new AnalyzeJavaScriptTool());
         registerTool(registry, new TranslateJavaScriptTool());
         registerTool(registry, new TranslateWebappTool());
+        registerTool(registry, new MigratePlanTool());
 
         // JavaFX tools (5)
         registerTool(registry, new InitCanvasTool());
