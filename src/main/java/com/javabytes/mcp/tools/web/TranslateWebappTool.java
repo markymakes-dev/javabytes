@@ -486,6 +486,16 @@ public class TranslateWebappTool implements Tool {
                             <artifactId>javafx-fxml</artifactId>
                             <version>${javafx.version}</version>
                         </dependency>
+                        <dependency>
+                            <groupId>com.fasterxml.jackson.core</groupId>
+                            <artifactId>jackson-databind</artifactId>
+                            <version>2.17.2</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>jakarta.persistence</groupId>
+                            <artifactId>jakarta.persistence-api</artifactId>
+                            <version>3.1.0</version>
+                        </dependency>
                 %s                    </dependencies>
                     <build>
                         <plugins>
@@ -777,6 +787,7 @@ public class TranslateWebappTool implements Tool {
 
                 import %s.entity.%s;
                 import %s.client.ApiClient;
+                import com.fasterxml.jackson.databind.JsonNode;
                 import javafx.collections.FXCollections;
                 import javafx.collections.ObservableList;
                 import javafx.geometry.Insets;
@@ -931,8 +942,12 @@ public class TranslateWebappTool implements Tool {
         String idType = idField != null ? javaTypeFor(idField.type()) : "Long";
         String idMember = idField != null ? memberName(idField.name()) : "id";
 
-        // Build form fields with proper GridPane layout
+        // Build form fields with proper GridPane layout. Widgets are instance
+        // fields (save() runs outside the constructor) and edit mode prefills
+        // existing values so saving an edit cannot wipe untouched fields.
         StringBuilder formContent = new StringBuilder();
+        StringBuilder widgetDecls = new StringBuilder();
+        StringBuilder prefill = new StringBuilder();
         StringBuilder fieldBindings = new StringBuilder();
 
         int row = 0;
@@ -942,58 +957,64 @@ public class TranslateWebappTool implements Tool {
             String member = memberName(f.name());
             String columnName = f.column();
             String capitalized = capitalize(member);
+            String widget = widgetTypeFor(javaType);
+
+            widgetDecls.append("    private final ").append(widget).append(" ")
+                    .append(member).append("Field;\n");
 
             // Add label and field to GridPane
             formContent.append("        form.add(new Label(\"").append(columnName).append("\"), 0, ").append(row).append(");\n");
 
-            // Form field declaration
-            if (javaType.equals("String")) {
-                formContent.append("        TextField ").append(member).append("Field = new TextField();\n");
-                formContent.append("        ").append(member).append("Field.setPromptText(\"").append(columnName).append("\");\n");
-                formContent.append("        form.add(").append(member).append("Field, 1, ").append(row).append(");\n\n");
-            } else if (javaType.equals("Integer") || javaType.equals("Long")) {
-                formContent.append("        TextField ").append(member).append("Field = new TextField();\n");
-                formContent.append("        ").append(member).append("Field.setPromptText(\"").append(columnName).append(" (number)\");\n");
-                formContent.append("        form.add(").append(member).append("Field, 1, ").append(row).append(");\n\n");
-            } else if (javaType.equals("Double") || javaType.equals("Float")) {
-                formContent.append("        TextField ").append(member).append("Field = new TextField();\n");
-                formContent.append("        ").append(member).append("Field.setPromptText(\"").append(columnName).append(" (decimal)\");\n");
-                formContent.append("        form.add(").append(member).append("Field, 1, ").append(row).append(");\n\n");
-            } else if (javaType.equals("Boolean")) {
-                formContent.append("        CheckBox ").append(member).append("Field = new CheckBox(\"").append(columnName).append("\");\n");
-                formContent.append("        form.add(").append(member).append("Field, 1, ").append(row).append(");\n\n");
-            } else if (javaType.equals("java.time.LocalDate") || javaType.equals("LocalDate")) {
-                formContent.append("        DatePicker ").append(member).append("Field = new DatePicker();\n");
-                formContent.append("        form.add(").append(member).append("Field, 1, ").append(row).append(");\n\n");
-            } else if (javaType.equals("java.time.LocalDateTime") || javaType.equals("LocalDateTime")) {
-                formContent.append("        DatePicker ").append(member).append("Field = new DatePicker();\n");
-                formContent.append("        form.add(").append(member).append("Field, 1, ").append(row).append(");\n\n");
+            // Form field construction (assigned to the instance field)
+            if (widget.equals("CheckBox")) {
+                formContent.append("        this.").append(member).append("Field = new CheckBox(\"")
+                        .append(columnName).append("\");\n");
+            } else if (widget.equals("DatePicker")) {
+                formContent.append("        this.").append(member).append("Field = new DatePicker();\n");
             } else {
-                formContent.append("        TextField ").append(member).append("Field = new TextField();\n");
-                formContent.append("        ").append(member).append("Field.setPromptText(\"").append(columnName).append("\");\n");
-                formContent.append("        form.add(").append(member).append("Field, 1, ").append(row).append(");\n\n");
+                String hint = switch (javaType) {
+                    case "Integer", "Long" -> " (number)";
+                    case "Double", "Float", "BigDecimal" -> " (decimal)";
+                    default -> "";
+                };
+                formContent.append("        this.").append(member).append("Field = new TextField();\n");
+                formContent.append("        ").append(member).append("Field.setPromptText(\"")
+                        .append(columnName).append(hint).append("\");\n");
+            }
+            formContent.append("        form.add(").append(member).append("Field, 1, ").append(row).append(");\n\n");
+
+            // Prefill existing values when editing (entity is non-null then)
+            prefill.append("            ").append(member).append("Field");
+            if (widget.equals("CheckBox")) {
+                prefill.append(".setSelected(entity.get").append(capitalized).append("());\n");
+            } else if (widget.equals("DatePicker")) {
+                prefill.append(".setValue(entity.get").append(capitalized).append("()");
+                if (javaType.equals("LocalDateTime")) {
+                    prefill.append(" == null ? null : entity.get").append(capitalized)
+                            .append("().toLocalDate()");
+                }
+                prefill.append(");\n");
+            } else {
+                prefill.append(".setText(entity.get").append(capitalized)
+                        .append("() == null ? \"\" : String.valueOf(entity.get")
+                        .append(capitalized).append("()));\n");
             }
 
             // Field binding for entity creation
             fieldBindings.append("        toSave.set").append(capitalized).append("(");
-            if (javaType.equals("String")) {
-                fieldBindings.append(member).append("Field.getText()");
-            } else if (javaType.equals("Integer")) {
-                fieldBindings.append("Integer.parseInt(").append(member).append("Field.getText())");
-            } else if (javaType.equals("Long")) {
-                fieldBindings.append("Long.parseLong(").append(member).append("Field.getText())");
-            } else if (javaType.equals("Double")) {
-                fieldBindings.append("Double.parseDouble(").append(member).append("Field.getText())");
-            } else if (javaType.equals("Float")) {
-                fieldBindings.append("Float.parseFloat(").append(member).append("Field.getText())");
-            } else if (javaType.equals("Boolean")) {
-                fieldBindings.append(member).append("Field.isSelected()");
-            } else if (javaType.equals("java.time.LocalDate") || javaType.equals("LocalDate")) {
-                fieldBindings.append(member).append("Field.getValue()");
-            } else if (javaType.equals("java.time.LocalDateTime") || javaType.equals("LocalDateTime")) {
-                fieldBindings.append(member).append("Field.getValue().atStartOfDay()");
-            } else {
-                fieldBindings.append(member).append("Field.getText()");
+            switch (javaType) {
+                case "Integer" -> fieldBindings.append("Integer.parseInt(").append(member).append("Field.getText())");
+                case "Long" -> fieldBindings.append("Long.parseLong(").append(member).append("Field.getText())");
+                case "Double" -> fieldBindings.append("Double.parseDouble(").append(member).append("Field.getText())");
+                case "Float" -> fieldBindings.append("Float.parseFloat(").append(member).append("Field.getText())");
+                case "BigDecimal" -> fieldBindings.append("new BigDecimal(").append(member).append("Field.getText())");
+                case "Boolean" -> fieldBindings.append(member).append("Field.isSelected()");
+                case "LocalDate" -> fieldBindings.append(member).append("Field.getValue()");
+                case "LocalDateTime" -> fieldBindings.append(member).append("Field.getValue() == null ? null : ")
+                        .append(member).append("Field.getValue().atStartOfDay()");
+                case "byte[]" -> fieldBindings.append(member).append("Field.getText()")
+                        .append(".getBytes(StandardCharsets.UTF_8)");
+                default -> fieldBindings.append(member).append("Field.getText()");
             }
             fieldBindings.append(");\n");
 
@@ -1010,7 +1031,8 @@ public class TranslateWebappTool implements Tool {
                 import javafx.scene.layout.GridPane;
                 import javafx.scene.layout.VBox;
 
-                import java.util.function.Runnable;
+                import java.math.BigDecimal;
+                import java.nio.charset.StandardCharsets;
 
                 /**
                  * Create/Edit form for %s entities.
@@ -1021,7 +1043,7 @@ public class TranslateWebappTool implements Tool {
                     private final %s entity;
                     private final boolean isNew;
                     private final Runnable onSaved;
-
+%s
                     public %s(ApiClient apiClient, %s entity, Runnable onSaved) {
                         this.apiClient = apiClient;
                         this.entity = entity;
@@ -1042,6 +1064,10 @@ public class TranslateWebappTool implements Tool {
 
 %s
                         getChildren().add(form);
+
+                        if (!isNew) {
+%s
+                        }
 
                         Button saveBtn = new Button("Save");
                         saveBtn.setDefaultButton(true);
@@ -1084,15 +1110,27 @@ public class TranslateWebappTool implements Tool {
                         className,
                         formViewClass,
                         className,
-                        formViewClass, className, className,
-                        className,
+                        widgetDecls.toString(),
+                        formViewClass, className,
+                        className, className,
                         formContent.toString(),
-                        className,
-                        className,
+                        prefill.toString(),
+                        className, className,
                         fieldBindings.toString(),
                         plural.toLowerCase(),  // for POST /api/%s
                         plural.toLowerCase(), capitalize(idMember)  // for PUT /api/%s/ + toSave.get%s()
                 );
+    }
+
+    /** The JavaFX control used to edit a value of the given Java type. */
+    private static String widgetTypeFor(String javaType) {
+        if ("Boolean".equals(javaType)) {
+            return "CheckBox";
+        }
+        if ("LocalDate".equals(javaType) || "LocalDateTime".equals(javaType)) {
+            return "DatePicker";
+        }
+        return "TextField";
     }
 
     private static String apiController(String packageName, JsonNode routes) {
@@ -1497,8 +1535,13 @@ public class TranslateWebappTool implements Tool {
         imports.add("jakarta.persistence.Entity");
         imports.add("jakarta.persistence.Table");
         imports.add("jakarta.persistence.Id");
-        imports.add("jakarta.persistence.GeneratedValue");
-        imports.add("jakarta.persistence.GenerationType");
+        // @GeneratedValue/GenerationType are only emitted for numeric ids;
+        // keep the generated imports in sync so no unused imports remain.
+        boolean numericId = id == null || isNumericJavaType(idJavaType);
+        if (numericId) {
+            imports.add("jakarta.persistence.GeneratedValue");
+            imports.add("jakarta.persistence.GenerationType");
+        }
         imports.add("jakarta.persistence.Column");
         for (FieldDef f : ent.fields()) {
             String t = importTypeFor(f.type());
@@ -1527,9 +1570,18 @@ public class TranslateWebappTool implements Tool {
             gettersSetters.insert(0, "    public void setId(Long id) { this.id = id; }\n\n");
         } else {
             sb.append("    @Id\n");
-            sb.append("    @GeneratedValue(strategy = GenerationType.IDENTITY)\n");
+            if (isNumericJavaType(idJavaType)) {
+                sb.append("    @GeneratedValue(strategy = GenerationType.IDENTITY)\n");
+            }
+            // String ids are client-assigned (faithful to JS Id.uuid()); Hibernate
+            // must include them in the INSERT, so no @GeneratedValue here.
             sb.append("    @Column(name = \"").append(idColumn).append("\")\n");
             sb.append("    private ").append(idJavaType).append(" ").append(idMember).append(";\n\n");
+            String cap = capitalize(idMember);
+            gettersSetters.insert(0, "    public " + idJavaType + " get" + cap
+                    + "() { return " + idMember + "; }\n");
+            gettersSetters.insert(0, "    public void set" + cap + "(" + idJavaType
+                    + " " + idMember + ") { this." + idMember + " = " + idMember + "; }\n\n");
         }
         sb.append(fields);
         sb.append(gettersSetters);
@@ -1745,6 +1797,12 @@ public class TranslateWebappTool implements Tool {
             case "UUID" -> "java.util.UUID";
             default -> null;
         };
+    }
+
+    /** Numeric id types are DB-generated; everything else (e.g. String from JS
+     * {@code Id.uuid()}) is client-assigned and must not use @GeneratedValue. */
+    private static boolean isNumericJavaType(String javaType) {
+        return "Long".equals(javaType) || "Integer".equals(javaType);
     }
 
     private static String readme(String packageName, String target, List<EntityDef> entities,

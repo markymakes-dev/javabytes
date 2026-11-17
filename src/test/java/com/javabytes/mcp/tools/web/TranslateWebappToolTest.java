@@ -562,6 +562,25 @@ class TranslateWebappToolTest {
         assertTrue(formView.contains("TextField emailField"));
         assertTrue(formView.contains("DatePicker createdAtField"));
 
+        // FormView regression: widgets must be instance fields (save() runs
+        // outside the constructor), the bogus java.util.function.Runnable
+        // import is gone, and edit mode prefills existing entity values.
+        assertTrue(formView.contains("private final TextField emailField;"), formView);
+        assertTrue(formView.contains("this.emailField = new TextField();"), formView);
+        assertFalse(formView.contains("java.util.function.Runnable"), formView);
+        assertTrue(formView.contains("if (!isNew)"), formView);
+        assertTrue(formView.contains(".setText(entity.get"), formView);
+
+        // Entity regression: the id must always expose accessors (Jackson
+        // deserializes it from JSON); numeric ids keep @GeneratedValue.
+        String entity = Files.readString(desktop.resolve("src/main/java/com/example/entity/User.java"));
+        assertTrue(entity.contains("getId() { return id; }"), entity);
+        assertTrue(entity.contains("public void setId("), entity);
+        java.util.regex.Matcher idDecl = java.util.regex.Pattern
+                .compile("@Id[^;]*;").matcher(entity);
+        assertTrue(idDecl.find(), entity);
+        assertTrue(idDecl.group().contains("@GeneratedValue"), entity);
+
         // Verify pom.xml has javafx-fxml dependency
         String pom = Files.readString(desktop.resolve("pom.xml"));
         assertTrue(pom.contains("javafx-fxml"));
@@ -570,5 +589,45 @@ class TranslateWebappToolTest {
         String readme = Files.readString(desktop.resolve("README.md"));
         assertTrue(readme.contains("CRUD views"));
         assertTrue(readme.contains("ApiClient"));
+    }
+
+    @Test
+    void springBootStringIdEntitySkipsGeneratedValue(@TempDir Path root) throws Exception {
+        // Regression: String ids are client-assigned (faithful to JS
+        // Id.uuid()). Hibernate must include them in the INSERT, so the
+        // template must NOT emit @GeneratedValue for them — otherwise
+        // inserts fail with "Field 'id' doesn't have a default value".
+        writeProject(root);
+        ObjectNode params = params(root);
+        params.put("target", "spring-boot-rest");
+        params.put("write_to", root.resolve("backend").toString());
+        params.put("entities", """
+                [
+                  {
+                    "name": "Tag",
+                    "table": "tags",
+                    "fields": [
+                      { "name": "id", "column": "id", "type": "STRING", "nullable": false,
+                        "unique": true, "id": true, "confidence": "high" },
+                      { "name": "label", "column": "label", "type": "STRING", "nullable": false,
+                        "unique": false, "confidence": "high" }
+                    ]
+                  }
+                ]
+                """);
+
+        JsonNode result = new TranslateWebappTool().execute(params);
+        assertTrue(result.path("success").asBoolean(), result.toString());
+
+        String entity = Files.readString(
+                root.resolve("backend/src/main/java/com/example/entity/Tag.java"));
+        assertTrue(entity.contains("private String id;"), entity);
+        assertTrue(entity.contains("public String getId() { return id; }"), entity);
+        assertTrue(entity.contains("public void setId(String id)"), entity);
+        java.util.regex.Matcher idDecl = java.util.regex.Pattern
+                .compile("@Id[^;]*;").matcher(entity);
+        assertTrue(idDecl.find(), entity);
+        assertFalse(idDecl.group().contains("@GeneratedValue"), entity);
+        assertFalse(entity.contains("import jakarta.persistence.GeneratedValue;"), entity);
     }
 }
