@@ -299,6 +299,43 @@ class TranslateWebappToolTest {
     }
 
     @Test
+    void crudControllerTemplatePlaceholderAlignment(@TempDir Path root) throws Exception {
+        // Regression: the crudController format args were misaligned, producing
+        // Optional<id>, @RequestBody id input, /{User} routes and
+        // @PathVariable User id — none of which compile.
+        writeProject(root);
+        ObjectNode params = params(root);
+        params.put("target", "spring-boot-rest");
+        params.put("write_to", root.resolve("out").toString());
+        params.put("entities", entitiesJson());
+        params.put("max_files", 50);
+
+        JsonNode result = new TranslateWebappTool().execute(params);
+        assertTrue(result.path("success").asBoolean(), result.toString());
+
+        Path out = root.resolve("out");
+        String controller = Files.readString(
+                out.resolve("src/main/java/com/example/web/UserController.java"));
+
+        // Entity type in generic positions (was Optional<id> / @RequestBody id).
+        assertTrue(controller.contains("Optional<User> found"), controller);
+        assertTrue(controller.contains(
+                "public ResponseEntity<User> create(@RequestBody User input)"), controller);
+        assertTrue(controller.contains(
+                "@RequestBody User input)"), controller);
+
+        // Id member in route placeholders (was /{User}).
+        assertTrue(controller.contains("@PutMapping(\"/{id}\")"), controller);
+        assertTrue(controller.contains("@DeleteMapping(\"/{id}\")"), controller);
+
+        // Id TYPE in @PathVariable (was @PathVariable User id).
+        assertTrue(controller.contains("findById(@PathVariable Integer id)"), controller);
+        assertTrue(controller.contains("delete(@PathVariable Integer id)"), controller);
+        assertFalse(controller.contains("@PathVariable User id"), controller);
+        assertFalse(controller.contains("Optional<id>"), controller);
+    }
+
+    @Test
     void keepFrontendNoStaticAssetsReportsLimitation(@TempDir Path root) throws Exception {
         // Project with only JSX source (not a static extension) and no static assets.
         Files.createDirectories(root.resolve("src"));

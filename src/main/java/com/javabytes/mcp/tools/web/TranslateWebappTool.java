@@ -1640,9 +1640,11 @@ public class TranslateWebappTool implements Tool {
                     }
                 }
                 """.formatted(packageName, packageName, cls, packageName, cls,
-                    ent.name(), basePath, basePath, cls,
-                    cls, cls, idMember, cls, idType, idMember, idType, idMember, cls,
-                    cls, cls, idMember, idMember, cls, idMember, cls, idMember, idType);
+                    cls, basePath, basePath, cls,
+                    cls, cls, idMember, cls, idType,
+                    cls, cls, cls,
+                    idMember, cls, idType, cls,
+                    idMember, idType);
     }
 
     private static String basePath(EntityDef ent) {
