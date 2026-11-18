@@ -79,7 +79,7 @@ npx -y javabytes-mcp config --client=claude     # → claude_desktop_config.json
 npx -y javabytes-mcp config --client=cursor     # → Cursor MCP settings
 npx -y javabytes-mcp config --client=vscode     # → .vscode/mcp.json
 
-# 3. Restart your client and verify tools load (should show 47/77)
+# 3. Restart your client and verify tools load (should show 50/80)
 ```
 
 Example `doctor` output:
@@ -167,8 +167,8 @@ Tools are grouped, and a group can be toggled without touching code:
 | `diagnostics` | on | evidence-based project diagnostics |
 | `ui`, `design`, `codegen`, `springboot` | **off** | template generators |
 
-A fresh server exposes **47 capability tools**; the **30 template generators** are opt-in
-(`JAVABYTES_ENABLE=all` exposes all 77).
+A fresh server exposes **50 capability tools**; the **30 template generators** are opt-in
+(`JAVABYTES_ENABLE=all` exposes all 80).
 
 Enable or disable by group or by individual tool name:
 
