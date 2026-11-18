@@ -57,6 +57,12 @@ public class SchemaRenderer {
 
         toolNode.set("inputSchema", schema);
 
+        // Issue #19: derived, not declared — one universal envelope schema
+        // (ADR 0008) serves every tool, mirroring the catalog-derived
+        // philosophy of ADR 0006. Tool-specific payload keys remain
+        // permitted via additionalProperties.
+        toolNode.set("outputSchema", outputEnvelopeSchema());
+
         ObjectNode annotations = JsonUtils.MAPPER.createObjectNode();
         annotations.put("title", spec.title());
         annotations.put("readOnlyHint", spec.readOnlyHint());
@@ -66,6 +72,24 @@ public class SchemaRenderer {
         toolNode.set("annotations", annotations);
 
         return toolNode;
+    }
+
+    /**
+     * The ADR-0008 envelope as a machine-checkable contract: success
+     * (boolean, required), error and message (optional strings). Richer
+     * tool-specific payloads are permitted beyond these keys.
+     */
+    public static ObjectNode outputEnvelopeSchema() {
+        ObjectNode schema = JsonUtils.MAPPER.createObjectNode();
+        schema.put("type", "object");
+        ObjectNode properties = JsonUtils.MAPPER.createObjectNode();
+        properties.set("success", JsonUtils.MAPPER.createObjectNode().put("type", "boolean"));
+        properties.set("error", JsonUtils.MAPPER.createObjectNode().put("type", "string"));
+        properties.set("message", JsonUtils.MAPPER.createObjectNode().put("type", "string"));
+        schema.set("properties", properties);
+        schema.set("required", JsonUtils.MAPPER.createArrayNode().add("success"));
+        schema.put("additionalProperties", true);
+        return schema;
     }
 
     private String getDescription(Object schema) {

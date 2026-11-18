@@ -111,7 +111,16 @@ public class ProtocolSession {
         content.add(text);
         result.set("content", content);
         // isError derived from the wire envelope's success field (ADR 0008)
-        result.put("isError", toolResult.has("success") && !toolResult.get("success").asBoolean());
+        boolean isError = toolResult.has("success") && !toolResult.get("success").asBoolean();
+        result.put("isError", isError);
+        // Issue #19: typed clients read the envelope as data. Successful
+        // results carry structuredContent (the envelope object itself, not a
+        // re-serialization); error results omit it per MCP guidance — the
+        // envelope still travels in text content either way, so text-reading
+        // clients see zero change.
+        if (!isError) {
+            result.set("structuredContent", toolResult);
+        }
         return result;
     }
 

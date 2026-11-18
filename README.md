@@ -257,6 +257,18 @@ Prompts are documentation: always advertised, never feature-gated, they call no 
 no logic. A drift test in CI asserts every tool name a prompt references still exists in the
 catalog, so renames can never silently break the crew manual.
 
+## Structured tool results
+
+Every tool descriptor in `tools/list` carries a derived `outputSchema` — the result envelope as a
+machine-checkable contract: `success` (boolean, required), `error` and `message` (optional
+strings), tool-specific payload keys permitted. Successful `tools/call` results also carry
+`structuredContent`: the envelope as a real JSON object, so typed clients (MCP Inspector,
+FastMCP-style clients, IDE integrations) read results as data instead of re-parsing a string.
+Error results omit `structuredContent` per the MCP spec; the envelope still travels in text
+content, so text-reading clients see zero change. The schema is derived once in the same place
+input schemas are rendered — no per-tool annotation, no drift, no new dependency (conformance is
+a CI round-trip test, not a runtime validator).
+
 ## Security model
 
 - **Path sandbox.** `AppConfig.isPathAllowed` rejects empty paths and null bytes, normalizes,
