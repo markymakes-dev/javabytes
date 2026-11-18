@@ -470,8 +470,9 @@ public class MigratePlanTool implements Tool {
         List<String> out = new ArrayList<>();
         out.add("Static analysis only: this plan does not translate code and does not"
                 + " prove behavior; the port is written by the coding agent.");
-        out.add("migrate_record / migrate_replay / migrate_gate land in a later 1.3.x"
-                + " release; until then 'matches the original' is a claim, not evidence.");
+        out.add("migrate_record (shipped) captures behavior evidence that migrate_replay"
+                + " / migrate_gate (later 1.3.x) will replay; until then 'matches the"
+                + " original' is a claim, not evidence.");
         out.add("Starter decisions are seeds with status needs-owner; they are not"
                 + " decisions until the owner confirms them.");
         out.add("Port order inside a dependency cycle is unresolved by definition.");
@@ -550,7 +551,7 @@ public class MigratePlanTool implements Tool {
         md.append("\n## Next steps\n\n");
         md.append("1. Owner confirms the starter decisions.\n");
         md.append("2. Port wave 1 units (agent-written; `translate_javascript` assists on the honest subset).\n");
-        md.append("3. When migrate_record ships: record the original unit, port, replay, gate.\n");
+        md.append("3. Run migrate_record on each portable unit, port it, then replay + gate.\n");
         return md.toString();
     }
 
