@@ -100,6 +100,23 @@ public class JsonRpcTransport {
                         JsonNode result = session.handleToolsCall(toolName, args);
                         writeResult(result, id);
                     }
+                    case "prompts/list" -> {
+                        JsonNode result = session.handlePromptsList();
+                        writeResult(result, id);
+                    }
+                    case "prompts/get" -> {
+                        String promptName = msg.at("/params/name").asText("");
+                        JsonNode args = msg.at("/params/arguments");
+                        if (args == null || args.isMissingNode() || args.isNull()) {
+                            args = JsonUtils.MAPPER.createObjectNode();
+                        }
+                        if (!args.isObject()) {
+                            writeResponse(-32602, "Prompt arguments must be a JSON object", id);
+                            continue;
+                        }
+                        JsonNode result = session.handlePromptsGet(promptName, args);
+                        writeResult(result, id);
+                    }
                     default -> {
                         if (!isNotification) {
                             writeResponse(-32601, "Method not found: " + method, id);

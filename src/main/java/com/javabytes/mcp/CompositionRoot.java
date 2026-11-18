@@ -3,6 +3,8 @@ package com.javabytes.mcp;
 import com.javabytes.mcp.config.AppConfig;
 import com.javabytes.mcp.config.FeatureConfiguration;
 import com.javabytes.mcp.javafx.JavaFxPlatform;
+import com.javabytes.mcp.prompts.CrewPrompts;
+import com.javabytes.mcp.prompts.PromptRegistry;
 import com.javabytes.mcp.protocol.ProtocolSession;
 import com.javabytes.mcp.McpServerRegistry;
 import com.javabytes.mcp.schema.types.SchemaRenderer;
@@ -81,8 +83,13 @@ public class CompositionRoot {
         // 5. Create schema renderer (wire format for tool descriptors)
         SchemaRenderer schemaRenderer = new SchemaRenderer();
 
+        // Prompts are data (issue #18): the crew pack registers alongside the
+        // tools, always advertised, never feature-gated.
+        PromptRegistry promptRegistry = new PromptRegistry();
+        promptRegistry.registerAll(CrewPrompts.definitions());
+
         // 6. Create protocol session (pure handler, no I/O)
-        this.protocolSession = new ProtocolSession(registry, features, schemaRenderer);
+        this.protocolSession = new ProtocolSession(registry, features, schemaRenderer, promptRegistry);
 
         // 7. Create transport (stdio loop)
         PrintStream out = System.out;

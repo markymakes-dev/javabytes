@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.javabytes.mcp.config.AppConfig;
 import com.javabytes.mcp.config.FeatureConfiguration;
 import com.javabytes.mcp.McpServerRegistry;
+import com.javabytes.mcp.prompts.PromptArgument;
+import com.javabytes.mcp.prompts.PromptDefinition;
+import com.javabytes.mcp.prompts.PromptRegistry;
 import com.javabytes.mcp.schema.types.SchemaRenderer;
 import com.javabytes.mcp.tools.Tool;
 import com.javabytes.mcp.utils.JsonUtils;
@@ -13,10 +16,13 @@ import com.javabytes.mcp.utils.Roots;
 import com.javabytes.mcp.utils.ToolMetadata;
 
 import java.io.PrintStream;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * MCP protocol session: handles initialize, tools/list, tools/call, roots negotiation.
+ * MCP protocol session: handles initialize, tools/list, tools/call,
+ * prompts/list, prompts/get, roots negotiation.
  * Pure handler — no I/O. Transport calls these methods.
  */
 public class ProtocolSession {
@@ -24,12 +30,15 @@ public class ProtocolSession {
     private final McpServerRegistry registry;
     private final FeatureConfiguration featureConfig;
     private final SchemaRenderer schemaRenderer;
+    private final PromptRegistry promptRegistry;
     private boolean clientSupportsRoots = false;
 
-    public ProtocolSession(McpServerRegistry registry, FeatureConfiguration featureConfig, SchemaRenderer schemaRenderer) {
+    public ProtocolSession(McpServerRegistry registry, FeatureConfiguration featureConfig,
+                           SchemaRenderer schemaRenderer, PromptRegistry promptRegistry) {
         this.registry = registry;
         this.featureConfig = featureConfig;
         this.schemaRenderer = schemaRenderer;
+        this.promptRegistry = promptRegistry;
     }
 
     /**
@@ -46,6 +55,10 @@ public class ProtocolSession {
         result.put("protocolVersion", negotiated);
         ObjectNode capabilities = JsonUtils.MAPPER.createObjectNode();
         capabilities.set("tools", JsonUtils.MAPPER.createObjectNode());
+        // Prompts are documentation (issue #18): always advertised, never
+        // feature-gated — gating them would hide the crew manual from the
+        // agents who need it.
+        capabilities.set("prompts", JsonUtils.MAPPER.createObjectNode());
         result.set("capabilities", capabilities);
         ObjectNode serverInfo = JsonUtils.MAPPER.createObjectNode();
         serverInfo.put("name", "JavaBytes");
@@ -100,6 +113,77 @@ public class ProtocolSession {
         // isError derived from the wire envelope's success field (ADR 0008)
         result.put("isError", toolResult.has("success") && !toolResult.get("success").asBoolean());
         return result;
+    }
+
+    /**
+     * Handle prompts/list request (issue #18).
+     */
+    public JsonNode handlePromptsList() {
+        ObjectNode result = JsonUtils.MAPPER.createObjectNode();
+        ArrayNode prompts = JsonUtils.MAPPER.createArrayNode();
+        for (PromptDefinition prompt : promptRegistry.list()) {
+            ObjectNode entry = JsonUtils.MAPPER.createObjectNode();
+            entry.put("name", prompt.name());
+            entry.put("description", prompt.description());
+            ArrayNode arguments = JsonUtils.MAPPER.createArrayNode();
+            for (PromptArgument argument : prompt.arguments()) {
+                ObjectNode arg = JsonUtils.MAPPER.createObjectNode();
+                arg.put("name", argument.name());
+                arg.put("description", argument.description());
+                arg.put("required", argument.required());
+                arguments.add(arg);
+            }
+            entry.set("arguments", arguments);
+            prompts.add(entry);
+        }
+        result.set("prompts", prompts);
+        return result;
+    }
+
+    /**
+     * Handle prompts/get request (issue #18): render the template with the
+     * supplied arguments. Unknown prompts and missing required arguments
+     * produce invalid-params errors, mirroring handleToolsCall's shape.
+     */
+    public JsonNode handlePromptsGet(String promptName, JsonNode arguments) {
+        if (!promptRegistry.hasPrompt(promptName)) {
+            return invalidParams("Unknown prompt: " + promptName);
+        }
+        Map<String, String> supplied = new HashMap<>();
+        if (arguments != null && arguments.isObject()) {
+            arguments.fieldNames().forEachRemaining(field -> supplied.put(field, arguments.get(field).asText("")));
+        }
+        List<String> missing = promptRegistry.get(promptName).arguments().stream()
+                .filter(PromptArgument::required)
+                .map(PromptArgument::name)
+                .filter(name -> !supplied.containsKey(name) || supplied.get(name).isBlank())
+                .toList();
+        if (!missing.isEmpty()) {
+            return invalidParams("Missing required prompt argument(s): " + String.join(", ", missing));
+        }
+        PromptDefinition prompt = promptRegistry.get(promptName);
+        ObjectNode result = JsonUtils.MAPPER.createObjectNode();
+        result.put("description", prompt.description());
+        ArrayNode messages = JsonUtils.MAPPER.createArrayNode();
+        ObjectNode message = JsonUtils.MAPPER.createObjectNode();
+        message.put("role", "user");
+        ObjectNode content = JsonUtils.MAPPER.createObjectNode();
+        content.put("type", "text");
+        content.put("text", promptRegistry.render(promptName, supplied));
+        message.set("content", content);
+        messages.add(message);
+        result.set("messages", messages);
+        return result;
+    }
+
+    private JsonNode invalidParams(String message) {
+        ObjectNode error = JsonUtils.MAPPER.createObjectNode();
+        error.put("code", -32602);
+        error.put("message", message);
+        ObjectNode resp = JsonUtils.MAPPER.createObjectNode();
+        resp.put("jsonrpc", "2.0");
+        resp.set("error", error);
+        return resp;
     }
 
     /**

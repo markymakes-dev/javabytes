@@ -242,6 +242,21 @@ These emit templates. They do not compile or run the result. Prefer prompting fo
 beyond their exact shape. All of them are disabled by default; enable them with
 `JAVABYTES_ENABLE=ui,design,codegen,springboot` (or `all`).
 
+## Crew prompts (built-in migration manual)
+
+Alongside tools the server advertises the MCP **prompts capability** and ships four prompt
+templates — the crew pack — mapped 1:1 to the java-anything pipeline phases:
+
+- `recon` — analyze the source app, choose the UI strategy with the human (ask-first wizard,
+  ADR 0004/0013), produce the wave-ordered ticket list.
+- `port` — translate the honest subset per unit, hand-write the rest, record cases for the gate.
+- `verify` — run the migration gate per unit; a unit is done only when recorded behavior replays.
+- `report` — assemble the Converted / Manual work / Unverified split; claims end where evidence ends.
+
+Prompts are documentation: always advertised, never feature-gated, they call no tools and carry
+no logic. A drift test in CI asserts every tool name a prompt references still exists in the
+catalog, so renames can never silently break the crew manual.
+
 ## Security model
 
 - **Path sandbox.** `AppConfig.isPathAllowed` rejects empty paths and null bytes, normalizes,
