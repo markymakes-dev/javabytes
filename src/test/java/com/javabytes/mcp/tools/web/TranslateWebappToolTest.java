@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TranslateWebappToolTest {
 
     @Test
-    void plansMigrationAndScaffoldsSpringBootWithHonestStubs(@TempDir Path root) throws Exception {
+    void autoFallsBackToJavaFxPerAdr0013AndStatesWhy(@TempDir Path root) throws Exception {
         writeProject(root);
         ObjectNode params = params(root);
         params.put("write_to", root.resolve("out").toString());
@@ -24,7 +24,11 @@ class TranslateWebappToolTest {
         JsonNode result = new TranslateWebappTool().execute(params);
 
         assertTrue(result.path("success").asBoolean(), result.toString());
-        assertEquals("spring-boot-vaadin", result.path("target").asText());
+        // ADR 0013: fullstack/unknown + browser APIs defaults to the JavaFX
+        // desktop shell; Vaadin is never a silent fallback.
+        assertEquals("javafx", result.path("target").asText());
+        String reason = result.path("strategy_reason").asText();
+        assertTrue(reason.contains("ADR 0013"), reason);
 
         String plan = result.path("migration_plan").asText();
         assertTrue(plan.contains("# Migration plan"));
@@ -37,22 +41,11 @@ class TranslateWebappToolTest {
         Path out = root.resolve("out");
         assertTrue(Files.isRegularFile(out.resolve("MIGRATION.md")));
         assertTrue(Files.isRegularFile(out.resolve("pom.xml")));
-        assertTrue(Files.isRegularFile(out.resolve("src/main/resources/application.properties")));
-
         String pom = Files.readString(out.resolve("pom.xml"));
-        assertTrue(pom.contains("vaadin-spring-boot-starter"));
-        assertTrue(pom.contains("java.version>21<"));
+        assertTrue(pom.contains("javafx-controls"), pom);
 
-        String controller = Files.readString(
-                out.resolve("src/main/java/com/example/web/ApiController.java"));
-        assertTrue(controller.contains("@GetMapping(\"/users/{id}\")"));
-        assertTrue(controller.contains("@PostMapping(\"/users\")"));
-        assertTrue(controller.contains("status(501)"));
-        assertFalse(controller.contains("/api\""));
-
-        String properties = Files.readString(
-                out.resolve("src/main/resources/application.properties"));
-        assertTrue(properties.contains("${DB_PASSWORD:}"));
+        String app = Files.readString(out.resolve("src/main/java/com/example/App.java"));
+        assertTrue(app.contains("extends Application"));
     }
 
     @Test
@@ -399,8 +392,9 @@ class TranslateWebappToolTest {
         assertTrue(reportContent.contains("## Browser-Bound Files"));
         assertTrue(reportContent.contains("## Data-Centric Generation"));
         assertTrue(reportContent.contains("## Written Files"));
-        // Summary table should show counts correctly
-        assertTrue(reportContent.contains("Limitations | 0"));
+        // Summary table shows counts; auto→javafx (ADR 0013) always adds the
+        // JavaFX desktop limitation, so the count is 1.
+        assertTrue(reportContent.contains("Limitations | 1"));
     }
 
     @Test

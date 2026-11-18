@@ -525,9 +525,9 @@ public final class JavaScriptAnalyzer {
             return "spring-boot-rest";
         }
         if (projectType.equals("frontend") || projectType.equals("fullstack")) {
-            return browserApis.isEmpty()
-                    ? "spring-boot-rest"
-                    : "spring-boot-vaadin";
+            // ADR 0013: JavaFX is the default UI strategy; Vaadin is never a
+            // silent fallback.
+            return browserApis.isEmpty() ? "spring-boot-rest" : "javafx";
         }
         return "spring-boot-rest";
     }

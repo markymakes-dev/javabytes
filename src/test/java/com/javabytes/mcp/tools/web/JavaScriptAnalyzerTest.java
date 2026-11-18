@@ -32,7 +32,9 @@ class JavaScriptAnalyzerTest {
         assertTrue(analysis.path("browser_apis").toString().contains("fetch"));
         assertTrue(analysis.path("unsupported").toString().contains("JSX"));
         assertEquals("frontend", analysis.path("project_type").asText());
-        assertEquals("spring-boot-vaadin", analysis.path("recommended_target").asText());
+        // ADR 0013: browser APIs with no clear backend intent recommend JavaFX;
+        // Vaadin is never a silent fallback.
+        assertEquals("javafx", analysis.path("recommended_target").asText());
         assertTrue(analysis.path("dependency_mapping").toString().contains("java.net.http.HttpClient"));
     }
 

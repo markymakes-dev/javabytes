@@ -26,6 +26,23 @@ starter decisions (`needs-owner`), vocabulary seed, limitations.
 - Port in wave order: wave 0 units first, then dependents.
 - `report_path` writes MIGRATION-PLAN.md — always persist it.
 
+### 1b. Choose the UI strategy — ask-first wizard (ADR 0004 / ADR 0013)
+
+When a human is driving and no target was pinned, **ask before scaffolding** —
+never let `auto` silently pick. Use the client's native question UI (radio
+buttons, e.g. the `question` tool modal in OpenCode/OMOS) and wait for the
+answer. Honest one-liners:
+
+| Strategy | When it's right |
+|---|---|
+| `keep-frontend` (recommended for browser webapps, ADR 0004) | The working frontend stays; Spring Boot takes over routes behind the same URLs. |
+| `javafx` (default desktop shell, ADR 0013) | The app is desktop-shaped or browser-bound UI needs a full rewrite; JavaFX CRUD views over the REST API. |
+| `spring-boot-rest` | You only want the backend/API port; UI handled separately. |
+| `spring-boot-vaadin` | You explicitly want an all-Java server-rendered UI. **Never a silent fallback.** |
+
+If no human is present (`auto`), the tool must state its pick and why
+(`strategy_reason`); unattended runs never rewrite a working frontend.
+
 ### 2. Port unit by unit (the agent writes Java)
 The tooling does NOT translate code — you do. Use `translate_javascript` for
 a first draft of portable units, then hand-fix. Keep the plan's honesty

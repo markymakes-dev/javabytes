@@ -1248,17 +1248,19 @@ public class TranslateWebappTool implements Tool {
             return new TargetDecision("spring-boot-rest",
                     "Backend project detected: generating a Spring Boot REST application.");
         }
-        // fullstack / unknown: keep the historical behaviour so an existing
-        // working frontend is not silently rewritten.
+        // fullstack / unknown: no silent Vaadin fallback (ADR 0013). Browser
+        // APIs with no clear backend intent follow the ADR 0013 default.
         if (browserApis.isEmpty()) {
             return new TargetDecision("spring-boot-rest",
                     "No browser APIs detected and no clear frontend/backend intent: generating "
                             + "a Spring Boot REST application (safest default, does not rewrite "
                             + "a working frontend).");
         }
-        return new TargetDecision("spring-boot-vaadin",
-                "Browser APIs detected with no clear backend intent: generating an all-Java "
-                        + "Vaadin browser UI.");
+        return new TargetDecision("javafx",
+                "Browser APIs detected with no clear backend intent: defaulting to the JavaFX "
+                        + "desktop shell (ADR 0013). Vaadin is never a silent fallback; when a "
+                        + "human is driving, the ask-first wizard presents all strategies before "
+                        + "this default applies (issue #16).");
     }
 
     private static boolean contains(JsonNode array, String value) {
