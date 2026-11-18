@@ -1,11 +1,17 @@
 ---
 name: javabytes-convert
-description: Convert or translate JavaScript, TypeScript or a web app to Java using JavaBytes' honest-subset pipeline. Use when the user asks to convert, translate, or port JS/TS code to Java, or pastes a GitHub repo URL expecting a Java version.
+description: Scaffold a running Java application (Spring Boot REST + JPA + chosen UI) from JavaScript, TypeScript or a web app using JavaBytes' honest-subset pipeline. Use when the user wants a one-shot scaffolded Java version of JS/TS code. For unit-by-unit migration with recorded-behavior proof, use javabytes-migrate instead.
 ---
 
-# Converting JavaScript to Java with JavaBytes
+# Scaffolding JavaScript to Java with JavaBytes
 
-The translation pipeline produces a **running application** (Spring Boot REST + JPA + chosen UI) — not just sources. Every construct is either compiled and verified, or listed honestly as manual work.
+> **Vocabulary (ADR 0014):** we say *migrate*, not *convert*. This skill is
+> the **scaffolding path** — a running application in one shot. For
+> evidence-based, unit-by-unit migration with recorded-behavior proof
+> (`migrate_plan` → `record` → `replay` → `gate` → `report`), use the
+> **javabytes-migrate** skill.
+
+The translation pipeline produces a **running application** (Spring Boot REST + JPA + chosen UI) - not just sources. Every construct is either compiled and verified, or listed honestly as manual work.
 
 ## Get the code where the tools can read it
 
