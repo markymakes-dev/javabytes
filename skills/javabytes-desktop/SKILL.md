@@ -29,7 +29,7 @@ plugin), an `App.java` that extends `Application`, per-entity CRUD view
 scaffolds over the REST API, `MIGRATION.md` + `README.md` notes, and a
 `strategy_reason` naming why JavaFX was picked.
 
-- Requires entities: run the `javabytes-dashboard` loop first (steps 1–2) or
+- Requires entities: run the `javabytes-backend` loop first (steps 1–2) or
   point at an existing REST API; views are generated per entity.
 - The scaffold compiles and starts. `App.java` is a **shell** — the desktop
   limitation ("desktop platform, not a web technology") is real and is part
@@ -76,4 +76,4 @@ input, not the output.
 
 - Coming from a JS webapp? `javabytes-migrate` (evidence loop) or
   `javabytes-convert` (one-shot scaffolding).
-- Data layer first? `javabytes-dashboard` steps 1–3.
+- Data layer first? `javabytes-backend` steps 1–3.

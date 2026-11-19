@@ -7,7 +7,7 @@ description: Design-system-aware UI generation with the JavaBytes MCP server —
 
 Generate and restyle UI **with a design system, not vibes**, using the
 `javabytes` MCP server (`npx -y javabytes-mcp`). This is the shared UI layer
-under `javabytes-dashboard` (web) and `javabytes-desktop` (JavaFX).
+under `javabytes-backend` (the REST API) and `javabytes-desktop` (JavaFX).
 
 ## The loop
 
@@ -58,6 +58,6 @@ never hand-patch one screen to make the report green.
 
 ## Cross-references
 
-- Web dashboards: `javabytes-dashboard` (CRUD + data layer around this).
+- Web dashboards: `javabytes-backend` (REST API + data layer around this).
 - Desktop shells: `javabytes-desktop` (JavaFX views around this).
 - Porting an existing frontend: `javabytes-migrate`.

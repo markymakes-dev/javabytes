@@ -311,7 +311,7 @@ reading it:
   analyze, translate, report - with an honest manual-work inventory.
 - `javabytes-migrate` — the evidence-loop migration (plan → port → record →
   replay → gate → report).
-- `javabytes-dashboard` — data-centric web dashboards: schema extraction →
+- `javabytes-backend` — the data layer and REST backend: schema extraction →
   normalized DDL → Spring Boot CRUD → verified running app.
 - `javabytes-desktop` — JavaFX desktop apps: ask-first strategy, javafx
   target, per-entity CRUD views, headless-safe Prove step.

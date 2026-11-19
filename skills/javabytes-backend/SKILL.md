@@ -1,14 +1,21 @@
 ---
-name: javabytes-dashboard
-description: Build data-centric web dashboards (Spring Boot REST + CRUD over MySQL) with the JavaBytes MCP server. Use when the user asks for a dashboard, admin panel, CRUD app, or reporting UI over a database — from schema extraction through generated entities, repositories and controllers to a verified running app.
+name: javabytes-backend
+description: Build the data layer and REST backend for an app (Spring Boot + JPA + MySQL) with the JavaBytes MCP server. Use when the user asks for a dashboard, admin panel, CRUD app, or API backed by a database — from schema extraction through generated entities, repositories and controllers to a verified running app. Pairs with javabytes-desktop (JavaFX client) or the user's own frontend.
 ---
 
-# JavaBytes dashboard (data-centric webapp)
+# JavaBytes backend (data pipeline → REST API)
 
-Build a **dashboard/admin/CRUD webapp** from a data model — existing database,
-ORM files, or a plain description — using the `javabytes` MCP server
-(`npx -y javabytes-mcp`). The loop is the 1.1.0 conversion pipeline pointed at
-a greenfield target: extract → normalize → generate → prove.
+Build the **data layer and REST backend** — the part a web dashboard, admin
+panel, or JavaFX desktop client sits on top of — from a data model (existing
+database, ORM files, or a plain description), using the `javabytes` MCP
+server (`npx -y javabytes-mcp`). The loop is the 1.1.0 conversion pipeline
+pointed at a greenfield target: extract → normalize → generate → prove.
+
+**Naming note:** this skill is a *layer* (backend), not a platform.
+"Dashboard" is a layout pattern (see `javabytes-ui`), buildable on either
+platform; the web browser and the desktop are platforms (the latter is
+`javabytes-desktop`). The pipeline below feeds all of them — the REST API
+it generates is what both clients talk to.
 
 ## The loop
 
@@ -49,11 +56,11 @@ path generates a Spring Boot project: JPA entities, repositories, real CRUD
 controllers, `application.properties` (H2 by default), the full Maven file
 map.
 
-- Target selection: web dashboards default to the **keep-frontend** strategy
-  (ADR 0004) when a working frontend exists; a fresh dashboard with no
-  frontend is a new `spring-boot-rest` project plus whatever UI layer the
-  user picks. When a human is driving and the choice is unclear, ask — the
-  ask-first wizard in `javabytes-migrate` §1b applies here too (ADR 0013).
+- Target selection: when a working frontend exists, the **keep-frontend**
+  strategy (ADR 0004) preserves it and takes over routes; a fresh backend is
+  a new `spring-boot-rest` app. When a human is driving and the choice is
+  unclear, ask — the ask-first wizard in `javabytes-migrate` §1b applies
+  here too (ADR 0013).
 - Vaadin is never a silent fallback (ADR 0013).
 - Generated code compiles and starts — the honesty rule is "compile AND
   start, no TODOs". If the generator reports a limitation, carry it into the
@@ -61,7 +68,7 @@ map.
 
 ### 5. Prove it — run + verify
 - Start the app (`mvn spring-boot:run` in the generated project) and hit the
-  actuator/health endpoint; a dashboard that does not boot is not delivered.
+  actuator/health endpoint; a backend that does not boot is not delivered.
 - `verify_generated` checks the generated project for the trap classes
   (empty CRUD bodies, TODO stubs, unwired repositories). Fix the *generator
   input* if it flags something — never hand-patch output to pass.
@@ -74,9 +81,10 @@ Each is a template generator: read what it wrote, then adjust to the domain.
 
 ## Honesty rules (non-negotiable)
 
-- Charts are not generated. JavaBytes produces the data layer and CRUD API;
-  visualization (charts, grids) is the frontend's job — say which endpoints
-  feed which widget instead of claiming rendered analytics.
+- Charts and pages are not generated. JavaBytes produces the data layer and
+  CRUD API; visualization is the client's job (browser frontend or JavaFX
+  views) — say which endpoints feed which widget instead of claiming
+  rendered analytics.
 - Schema confidence is per-field. "The schema is ready" means every field is
   high-confidence or explicitly user-confirmed.
 - Report the database you actually generated against (H2 default vs live
