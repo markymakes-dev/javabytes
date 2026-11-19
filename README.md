@@ -301,12 +301,24 @@ launcher resolution, and annotations in `tools/list`.
 
 ## Agent skills
 
-`skills/` holds three agent skills that make the tool catalog usable without
-reading it: `javabytes-setup` (install, configure, troubleshoot),
-`javabytes-tool-routing` (which tool to call, in what order, and what counts
-as done) and `javabytes-convert` (the JavaScript-to-Java pipeline: clone, scope,
-analyze, translate, report — with an honest manual-work inventory). Install
-them into an agent with:
+`skills/` holds agent skills that make the tool catalog usable without
+reading it:
+
+- `javabytes-setup` — install, configure, troubleshoot.
+- `javabytes-tool-routing` — which tool to call, in what order, and what
+  counts as done.
+- `javabytes-convert` — the JavaScript-to-Java pipeline: clone, scope,
+  analyze, translate, report - with an honest manual-work inventory.
+- `javabytes-migrate` — the evidence-loop migration (plan → port → record →
+  replay → gate → report).
+- `javabytes-dashboard` — data-centric web dashboards: schema extraction →
+  normalized DDL → Spring Boot CRUD → verified running app.
+- `javabytes-desktop` — JavaFX desktop apps: ask-first strategy, javafx
+  target, per-entity CRUD views, headless-safe Prove step.
+- `javabytes-ui` — design-system-aware UI generation: tokens, UI code, CSS,
+  JavaFX CSS bridge, anti-slop review gate.
+
+Install them into an agent with:
 
 ```bash
 npx skills@latest add markymakes-dev/javabytes
