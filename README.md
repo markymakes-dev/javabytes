@@ -128,6 +128,10 @@ The catalog holds 80 tools — enter through one task, not the catalog:
   agent the idea; `javabytes-backend` Phase 0 drafts the seed entities
   (plain SQL/JSON), then the standard chain runs — extract → normalize →
   `generate_database` → REST app → JavaFX client. No commands to memorize.
+- **"I need my defense document."** — `javabytes-defense` compiles a
+  defense-ready `DOCUMENTATION.md` from evidence: title, introduction,
+  objectives, scope and limitations, features with proof, database design
+  with data dictionary, architecture, and anticipated panel questions.
 
 ## Your first tool call (no client needed)
 
@@ -379,6 +383,8 @@ reading it:
   target, per-entity CRUD views, headless-safe Prove step.
 - `javabytes-ui` — design-system-aware UI generation: tokens, UI code, CSS,
   JavaFX CSS bridge, anti-slop review gate.
+- `javabytes-defense` — defense-ready documentation compiled from evidence:
+  objectives, scope, features with proof, data dictionary, panel prep.
 
 Install them into an agent with:
 
