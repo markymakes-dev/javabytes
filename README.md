@@ -153,6 +153,24 @@ npm install -g javabytes-mcp
 javabytes-mcp doctor
 ```
 
+## Working across multiple databases
+
+Coming from MySQL Workbench, your saved connections are just bookmarks —
+JavaBytes doesn't need them. A connection card is a `jdbc_url`:
+
+```text
+Workbench card:  root @ 127.0.0.1:3306 / jenny
+jdbc_url:        jdbc:mysql://127.0.0.1:3306/jenny?user=root&password=...
+```
+
+Every database tool accepts a per-call `jdbc_url`, so one server session can
+hop between schemas (URL-encode the password if it contains special
+characters). Set `JAVABYTES_DB_URL` / `JAVABYTES_DB_USER` /
+`JAVABYTES_DB_PASSWORD` to make one database the default and omit the
+parameter entirely. To give an agent two databases *simultaneously*, add a
+second MCP server entry with a different `JAVABYTES_DB_URL` — the tools stay
+the same, the sandbox does not.
+
 ## Build from source
 
 ```bash
