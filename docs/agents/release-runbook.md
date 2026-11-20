@@ -26,10 +26,21 @@ release; everything below was learned the hard way (1.2.1 through 1.5.0).
    - `Invoke-WebRequest https://registry.npmjs.org/javabytes-mcp/X.Y.Z`
    - `Invoke-WebRequest -Method Head https://registry.npmjs.org/javabytes-mcp/-/javabytes-mcp-X.Y.Z.tgz`
 7. Never declare a release broken on an early 404 — poll on a 20s cadence.
+8. **Version smoke test** (added after the 1.5.0 incident — the server
+   reported a hardcoded 1.0.0 through five releases): once the tarball is
+   live, drive the documented first tool call against the *published*
+   package and confirm the version matches the tag:
+   ```powershell
+   '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_version"}}' |
+     npx -y javabytes-mcp
+   ```
+   The result's `version` must equal `X.Y.Z`. A mismatch means a version
+   constant was hardcoded somewhere instead of reading the jar manifest
+   (`AppConfig.SERVER_VERSION` reads `Implementation-Version`).
 
 ## Official MCP Registry republish
 
-8. `mcp-publisher` lives at
+9. `mcp-publisher` lives at
    `C:\Users\markl\AppData\Local\Temp\opencode\mcp-publisher.exe` (v1.8.9).
    The Registry JWT **expires between releases** — expect a 401
    "Invalid or expired Registry JWT token" and re-login every time:
@@ -37,11 +48,11 @@ release; everything below was learned the hard way (1.2.1 through 1.5.0).
    & C:\Users\markl\AppData\Local\Temp\opencode\mcp-publisher.exe login github --token (gh auth token)
    & C:\Users\markl\AppData\Local\Temp\opencode\mcp-publisher.exe publish
    ```
-9. The interactive device flow **cannot run** in the windowless opencode shell
+10. The interactive device flow **cannot run** in the windowless opencode shell
    (it prints a code, then times out) — always use `--token`.
-10. A 400 "version was not found (status: 404)" from the registry means npm
+11. A 400 "version was not found (status: 404)" from the registry means npm
     has not propagated yet (step 6), not a failed publish. Wait, retry.
-11. **Verify isLatest** with the *search* endpoint — the single-server
+12. **Verify isLatest** with the *search* endpoint — the single-server
     endpoint `/v0/servers/<name>` 404s:
     ```powershell
     $r = Invoke-RestMethod "https://registry.modelcontextprotocol.io/v0/servers?search=io.github.markymakes-dev"
