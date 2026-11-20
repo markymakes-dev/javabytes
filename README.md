@@ -124,6 +124,10 @@ The catalog holds 80 tools — enter through one task, not the catalog:
   verify, report walk the whole loop.
 - **"Build a backend / desktop app."** — load `javabytes-backend` (schema →
   REST API), then pair with `javabytes-desktop` for the JavaFX client.
+- **"I only have an idea."** — that is a valid starting point. Tell the
+  agent the idea; `javabytes-backend` Phase 0 drafts the seed entities
+  (plain SQL/JSON), then the standard chain runs — extract → normalize →
+  `generate_database` → REST app → JavaFX client. No commands to memorize.
 
 ## Your first tool call (no client needed)
 

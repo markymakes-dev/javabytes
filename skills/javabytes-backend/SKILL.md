@@ -1,6 +1,6 @@
 ---
 name: javabytes-backend
-description: Build the data layer and REST backend for an app (Spring Boot + JPA + MySQL) with the JavaBytes MCP server. Use when the user asks for a dashboard, admin panel, CRUD app, or API backed by a database — from schema extraction through generated entities, repositories and controllers to a verified running app. Pairs with javabytes-desktop (JavaFX client) or the user's own frontend.
+description: Build the data layer and REST backend for an app (Spring Boot + JPA + MySQL) with the JavaBytes MCP server. Use when the user asks for a dashboard, admin panel, CRUD app, or API backed by a database — whether they have an existing schema or only an idea (Phase 0 seeds the entities) — from schema extraction through generated entities, repositories and controllers to a verified running app. Pairs with javabytes-desktop (JavaFX client) or the user's own frontend.
 ---
 
 # JavaBytes backend (data pipeline → REST API)
@@ -20,9 +20,57 @@ it generates is what both clients talk to.
 ## The loop
 
 ```
-extract_data_models → models_to_schema → generate_database (optional)
-→ translate_webapp (entities) → run + health check → verify_generated
+(idea → seed entities) → extract_data_models → models_to_schema
+→ generate_database (optional) → translate_webapp (entities)
+→ run + health check → verify_generated
 ```
+
+### 0. Starting from just an idea? Seed it first
+
+The pipeline consumes an artifact, not a wish — `extract_data_models` needs
+something to parse. When the user has only an idea ("a booking system for my
+apartment studio"), **drafting the seed entities is your job, in the
+session** — the server intentionally has no idea-to-schema tool (no
+server-side agency). Write one small file, then continue at step 1:
+
+1. Pick the 2–4 core entities the idea is *about* — the nouns that will
+   hold rows, not every noun the user said. For the studio example:
+   `Studio`, `Booking`, `Guest`.
+2. Name the obvious references between them (a booking points at a studio
+   and a guest) and the fields each one needs to be useful on day one.
+3. Write them as **plain SQL DDL or JSON** — the two friendliest inputs for
+   `extract_data_models`. A DDL seed is just a fence like:
+
+   ```sql
+   CREATE TABLE studio (
+     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+     name VARCHAR(120) NOT NULL,
+     nightly_rate DECIMAL(10,2) NOT NULL
+   );
+   CREATE TABLE guest (
+     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+     full_name VARCHAR(120) NOT NULL,
+     email VARCHAR(190) NOT NULL
+   );
+   CREATE TABLE booking (
+     id BIGINT PRIMARY KEY AUTO_INCREMENT,
+     studio_id BIGINT NOT NULL,
+     guest_id BIGINT NOT NULL,
+     check_in DATE NOT NULL,
+     check_out DATE NOT NULL,
+     total_amount DECIMAL(10,2) NOT NULL
+   );
+   ```
+
+4. Show the seed to the user before generating — it is a draft of *their*
+   system, and the per-field confidence rules below still apply. Anything
+   you were unsure about lands on the verification list at step 2; say so.
+5. Then run the standard chain (steps 1–5). If the user will want a UI,
+   that is where the ADR 0013 ask-first question (desktop vs web client)
+   comes in — ask once, before scaffolding.
+
+Do not gold-plate the seed. The loop below normalizes, questions, and
+generates — a small honest seed beats a large invented one.
 
 ### 1. Extract the data model — `extract_data_models`
 Point it at the source of truth. Accepted inputs: mongoose schemas, prisma
