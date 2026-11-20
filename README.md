@@ -137,6 +137,14 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_versio
 You get back a result envelope with `success: true` and the server's version —
 that is the whole protocol; every client does exactly this.
 
+> **Windows cmd.exe:** the outer single quotes above are PowerShell/bash
+> syntax — `cmd` passes them through and the server answers `Parse error`.
+> Drop the quotes for cmd:
+>
+> ```bat
+> echo {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_version"}} | npx -y javabytes-mcp
+> ```
+
 **If `npx` stalls or errors with a cache/lock message (EBUSY):** install once
 globally and run the binary directly —
 
