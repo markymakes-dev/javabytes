@@ -7,12 +7,12 @@
     "url": "https://github.com/markymakes-dev/javabytes",
     "source": "github"
   },
-  "version": "1.5.1",
+  "version": "1.5.2",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "javabytes-mcp",
-      "version": "1.5.1",
+      "version": "1.5.2",
       "transport": {
         "type": "stdio"
       },

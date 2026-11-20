@@ -32,11 +32,14 @@ release; everything below was learned the hard way (1.2.1 through 1.5.0).
    package and confirm the version matches the tag:
    ```powershell
    '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_version"}}' |
-     npx -y javabytes-mcp
+     npx -y javabytes-mcp@X.Y.Z
    ```
-   The result's `version` must equal `X.Y.Z`. A mismatch means a version
-   constant was hardcoded somewhere instead of reading the jar manifest
-   (`AppConfig.SERVER_VERSION` reads `Implementation-Version`).
+   **Pin the version** — a bare `npx -y javabytes-mcp` reuses the local npx
+   cache and can happily serve the previous release (this masked 1.5.1 in
+   the 1.5.2 smoke test). The result's `version` must equal `X.Y.Z`; a
+   mismatch means a version constant was hardcoded instead of reading the
+   jar manifest (`AppConfig.SERVER_VERSION` reads
+   `Implementation-Version`, set by the Shade `manifestEntries`).
 
 ## Official MCP Registry republish
 
