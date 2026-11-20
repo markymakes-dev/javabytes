@@ -113,10 +113,42 @@ The `doctor` command checks Java ≥ 21, the bundled jar, MySQL env, and npm upd
 The `config` command prints ready-to-paste JSON with placeholders — just update the
 password and database URL, then restart your client.
 
+## Pick your path
+
+The catalog holds 80 tools — enter through one task, not the catalog:
+
+- **"What's in my database?"** — set `JAVABYTES_DB_URL` (or pass `jdbc_url`
+  per call), then `list_tables` → `describe_table` → `analyze_schema_normalization`.
+- **"Port my JavaScript to Java."** — load the `javabytes-migrate` skill, or
+  ask the server for its built-in crew prompts (`prompts/list`): recon, port,
+  verify, report walk the whole loop.
+- **"Build a backend / desktop app."** — load `javabytes-backend` (schema →
+  REST API), then pair with `javabytes-desktop` for the JavaFX client.
+
+## Your first tool call (no client needed)
+
+The server speaks JSON-RPC 2.0 on stdio, so any terminal can drive it — a
+good smoke test before wiring up a client:
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_version"}}' | npx -y javabytes-mcp
+```
+
+You get back a result envelope with `success: true` and the server's version —
+that is the whole protocol; every client does exactly this.
+
+**If `npx` stalls or errors with a cache/lock message (EBUSY):** install once
+globally and run the binary directly —
+
+```bash
+npm install -g javabytes-mcp
+javabytes-mcp doctor
+```
+
 ## Build from source
 
 ```bash
-mvn clean test        # 146 unit tests (6 more run live only when JAVABYTES_RUN_DB_TESTS=1)
+mvn clean test        # unit tests; live-MySQL tests run only with JAVABYTES_RUN_DB_TESTS=1
 mvn package           # produces target/javabytes.jar (shaded, runnable)
 ```
 
