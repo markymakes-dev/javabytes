@@ -20,8 +20,19 @@ public class AppConfig {
     public static final String DB_PASSWORD = System.getenv().getOrDefault("JAVABYTES_DB_PASSWORD", "password");
 
     // Server configuration
-    public static final String SERVER_VERSION = "1.0.0";
+    /**
+     * Server version, read from the jar manifest (Implementation-Version, set by
+     * the Maven Shade plugin). Never hardcode: a stale constant here made the
+     * initialize handshake report 1.0.0 long after the server moved past it.
+     * Falls back to "unknown" when running outside the shaded jar (tests, IDE).
+     */
+    public static final String SERVER_VERSION = resolveVersion();
     public static final String JAVA_VERSION = System.getProperty("java.version");
+
+    private static String resolveVersion() {
+        String v = AppConfig.class.getPackage().getImplementationVersion();
+        return v != null ? v : "unknown";
+    }
 
     /**
      * Supported MCP protocol versions, newest first.

@@ -2,6 +2,7 @@ package com.javabytes.mcp.tools.system;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.javabytes.mcp.config.AppConfig;
 import com.javabytes.mcp.tools.Tool;
 import com.javabytes.mcp.tools.ToolSpec;
 import com.javabytes.mcp.utils.JsonUtils;
@@ -29,7 +30,9 @@ public class GetVersionTool implements Tool {
     public JsonNode execute(JsonNode params) {
         ObjectNode result = JsonUtils.MAPPER.createObjectNode();
         result.put("success", true);
-        result.put("version", "1.0.0");
+        // AppConfig.SERVER_VERSION comes from the jar manifest (Implementation-Version,
+        // set by the Maven Shade plugin) — never hardcode it here.
+        result.put("version", AppConfig.SERVER_VERSION);
         result.put("java_version", System.getProperty("java.version"));
         return result;
     }
